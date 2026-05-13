@@ -1,4 +1,4 @@
-const CACHE = 'fairleads-v1';
+const CACHE = 'fairleads-v3';
 const CORE  = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -16,7 +16,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // For CDN requests (jsQR), try network first, fallback to cache
+  // CDN (jsQR): network first, cache fallback
   if (e.request.url.includes('cdn.jsdelivr.net')) {
     e.respondWith(
       fetch(e.request)
@@ -25,11 +25,23 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // For local files: cache first
+  // HTML: always try network first so updates are picked up immediately
+  if (e.request.mode === 'navigate' || e.request.url.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(r => { const c = r.clone(); caches.open(CACHE).then(cache => cache.put(e.request, c)); return r; })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // Other local files: cache first, update in background
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      if (res.ok) { const c = res.clone(); caches.open(CACHE).then(cache => cache.put(e.request, c)); }
-      return res;
-    }).catch(() => caches.match('./index.html')))
+    caches.match(e.request).then(cached => {
+      const network = fetch(e.request).then(r => {
+        if (r.ok) { const c = r.clone(); caches.open(CACHE).then(cache => cache.put(e.request, c)); }
+        return r;
+      });
+      return cached || network;
+    })
   );
 });
