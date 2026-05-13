@@ -929,14 +929,44 @@ function autoAssignFields(lines){
   return r;
 }
 
+/* ── Pre-process image for better OCR quality ──
+   Converts to grayscale, boosts contrast, ensures min 1600px wide */
+async function preprocessForOCR(file){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const MIN=1600;
+      let w=img.naturalWidth, h=img.naturalHeight;
+      if(w<MIN){const s=MIN/w; w=Math.round(w*s); h=Math.round(h*s);}
+      const cv=document.createElement('canvas');
+      cv.width=w; cv.height=h;
+      const ctx=cv.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // Grayscale + contrast stretch
+      const id=ctx.getImageData(0,0,w,h); const d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        const gray=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+        const c=Math.min(255,Math.max(0,(gray-128)*1.5+148)); // contrast + slight brighten
+        d[i]=d[i+1]=d[i+2]=c; // alpha unchanged
+      }
+      ctx.putImageData(id,0,0);
+      cv.toBlob(resolve,'image/png');
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); resolve(file); };
+    img.src=url;
+  });
+}
+
 /* ── Build ocrLines from auto-assignment ── */
 function buildZones(assignments){
-  // Zone height = avg detected line height × 1.5 (adds visual padding)
   const detected=Object.values(assignments).filter(Boolean);
   const avgH=detected.length
     ? detected.reduce((s,l)=>s+(l.bbox.y1-l.bbox.y0),0)/detected.length
-    : ocrNH*0.08;
-  const zoneH=Math.max(avgH*1.0, ocrNH*0.03);
+    : ocrNH*0.07;
+  const zoneH=Math.max(avgH, ocrNH*0.03);   // 1 line height exactly
+  const notasH=zoneH*3;                       // notas = 3 lines
   const pad=ocrNW*0.02;
 
   ocrLines=[];
@@ -944,23 +974,25 @@ function buildZones(assignments){
 
   for(const field of OCR_FIELDS){
     const line=assignments[field];
+    const fh=field==='notas'?notasH:zoneH;
     if(line){
       const cy=(line.bbox.y0+line.bbox.y1)/2;
       ocrLines.push({id:uid(),field,
-        bbox:{x0:pad, y0:cy-zoneH/2, x1:ocrNW-pad, y1:cy+zoneH/2}});
+        bbox:{x0:pad, y0:cy-fh/2, x1:ocrNW-pad, y1:cy+fh/2}});
     } else {
       missing.push(field);
     }
   }
 
   // Stack missing fields below the last detected zone
-  const maxY1=ocrLines.reduce((m,z)=>Math.max(m,z.bbox.y1), ocrNH*0.55);
-  const gap=zoneH*0.18;
+  const maxY1=ocrLines.reduce((m,z)=>Math.max(m,z.bbox.y1), ocrNH*0.5);
+  const gap=zoneH*0.25;
   let stackY=maxY1+gap;
   for(const field of missing){
+    const fh=field==='notas'?notasH:zoneH;
     ocrLines.push({id:uid(),field,
-      bbox:{x0:pad, y0:stackY, x1:ocrNW-pad, y1:stackY+zoneH}});
-    stackY+=zoneH+gap;
+      bbox:{x0:pad, y0:stackY, x1:ocrNW-pad, y1:stackY+fh}});
+    stackY+=fh+gap;
   }
 }
 
@@ -974,28 +1006,46 @@ async function doOCR(input){
   g('ocp-proc').style.display='block';
   g('ocp-review').style.display='none';
   g('ocr-bar').style.width='5%';
-  g('ocr-msg').textContent='⏳ A ler cartão…';
+  g('ocr-msg').textContent='⏳ A preparar imagem…';
   g('ocr-msg').className='scan-msg';
 
-  // Ensure image dimensions are available
+  // Ensure display image dimensions are set
   await new Promise(r=>{ if(imgEl.complete&&imgEl.naturalWidth)r(); else imgEl.onload=r; });
   ocrNW=imgEl.naturalWidth||800; ocrNH=imgEl.naturalHeight||600;
 
+  // Pre-process for OCR (grayscale + contrast + upscale) — separate from displayed image
+  const processed=await preprocessForOCR(file);
+
   let rawLines=[], assignments={};
   try{
-    const res=await Tesseract.recognize(file,'por+eng',{
+    const res=await Tesseract.recognize(processed,'por+eng',{
       logger:m=>{
         if(m.status==='recognizing text'){
           g('ocr-bar').style.width=Math.round(m.progress*100)+'%';
           g('ocr-msg').textContent='🔍 A reconhecer… '+Math.round(m.progress*100)+'%';
         } else if(m.status.includes('load')||m.status.includes('initial')){
-          g('ocr-msg').textContent='⏳ A preparar…'; g('ocr-bar').style.width='20%';
+          g('ocr-msg').textContent='⏳ A carregar motor…'; g('ocr-bar').style.width='20%';
         }
       }
     });
-    URL.revokeObjectURL(url);
-    ocrWords=(res.data.words||[]).filter(w=>w.text.trim()&&w.confidence>20);
+    // Scale Tesseract bboxes back to original image coordinates
+    const scaleX=ocrNW/(res.data.blocks?.[0]?.bbox?.x1||ocrNW);
+    const allWords=(res.data.words||[]).filter(w=>w.text.trim()&&w.confidence>20);
+    ocrWords=allWords;
     rawLines=(res.data.lines||[]).filter(l=>l.text.trim()&&l.confidence>15);
+    // If processed image was upscaled, rescale bboxes back to display coords
+    const procW=processed instanceof Blob
+      ? await new Promise(r=>{const i=new Image();i.onload=()=>{r(i.naturalWidth);URL.revokeObjectURL(i.src);};i.src=URL.createObjectURL(processed);})
+      : ocrNW;
+    const bscale=ocrNW/procW;
+    if(bscale!==1&&bscale>0){
+      for(const l of rawLines){
+        l.bbox.x0*=bscale;l.bbox.y0*=bscale;l.bbox.x1*=bscale;l.bbox.y1*=bscale;
+      }
+      for(const w of ocrWords){
+        w.bbox.x0*=bscale;w.bbox.y0*=bscale;w.bbox.x1*=bscale;w.bbox.y1*=bscale;
+      }
+    }
     assignments=autoAssignFields(rawLines);
     const found=Object.values(assignments).filter(Boolean).length;
     g('ocr-msg').textContent=found
@@ -1003,7 +1053,6 @@ async function doOCR(input){
       : '⚠️ Nada reconhecido — posiciona os retângulos manualmente';
     g('ocr-msg').className='scan-msg'+(found?'':' scan-err');
   }catch(e){
-    URL.revokeObjectURL(url);
     ocrWords=[];
     assignments={};
     g('ocr-msg').textContent='⚠️ OCR sem resultados — posiciona os retângulos manualmente';
