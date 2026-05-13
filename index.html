@@ -144,6 +144,12 @@ a.dval{color:var(--p);text-decoration:none;}
 .pin-d{width:52px;height:60px;border:2px solid var(--br);border-radius:12px;font-size:28px;text-align:center;outline:none;background:#fff;color:var(--t);-webkit-appearance:none;}
 .pin-d:focus{border-color:var(--p);}
 
+/* OCR ZONES */
+.ocr-zone{position:absolute;border-radius:4px;cursor:pointer;touch-action:none;box-sizing:border-box;transition:box-shadow .15s;}
+.ocr-zone:active{box-shadow:0 0 0 3px rgba(0,0,0,.3);}
+.ocr-lbl{position:absolute;top:-22px;left:0;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;letter-spacing:.3px;}
+#ocr-popup{position:absolute;background:#fff;border:1.5px solid var(--br);border-radius:12px;padding:10px 12px;z-index:30;display:none;box-shadow:0 6px 20px rgba(0,0,0,.18);min-width:160px;}
+
 /* TOAST */
 .toast{position:fixed;bottom:calc(var(--nh)+18px);left:50%;transform:translateX(-50%) translateY(16px);background:#1E293B;color:#fff;padding:10px 22px;border-radius:28px;font-size:14px;font-weight:600;opacity:0;transition:all .25s;z-index:400;white-space:nowrap;pointer-events:none;}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -286,26 +292,64 @@ a.dval{color:var(--p);text-decoration:none;}
   </div>
 
   <!-- OCR — cartão de contacto -->
-  <div class="view" id="v-ocr">
-    <div class="scanwrap">
-      <div id="ocr-prev" style="width:100%;max-width:380px;border-radius:18px;overflow:hidden;display:none;">
-        <img id="ocr-img" style="width:100%;display:block;border-radius:18px;">
-      </div>
-      <div class="scan-msg" id="ocr-msg">📸 Fotografa o cartão de contacto</div>
-      <div id="ocr-progress" style="width:100%;max-width:380px;background:var(--br);border-radius:8px;height:8px;display:none;">
-        <div id="ocr-bar" style="height:100%;background:var(--p);border-radius:8px;width:0%;transition:width .4s;"></div>
-      </div>
+  <div class="view" id="v-ocr" style="overflow-y:auto;padding-bottom:20px;">
+
+    <!-- FASE 1: captura -->
+    <div id="ocp-capture" class="scanwrap">
+      <div class="scan-msg">📸 Fotografa o cartão de contacto</div>
       <input type="file" id="ocr-file" accept="image/*" capture="environment" style="display:none" onchange="doOCR(this)">
-      <button type="button" class="btn btn-p" style="max-width:320px" onclick="document.getElementById('ocr-file').click()">
-        📸 Fotografar Cartão
+      <button type="button" class="btn btn-p" style="max-width:320px"
+        onclick="document.getElementById('ocr-file').setAttribute('capture','environment');document.getElementById('ocr-file').click()">
+        📸 Fotografar com câmara
       </button>
-      <button type="button" class="btn btn-o" style="max-width:320px" onclick="document.getElementById('ocr-file').removeAttribute('capture');document.getElementById('ocr-file').click()" title="Escolher da galeria">
-        🖼️ Escolher da Galeria
+      <button type="button" class="btn btn-o" style="max-width:320px"
+        onclick="document.getElementById('ocr-file').removeAttribute('capture');document.getElementById('ocr-file').click()">
+        🖼️ Escolher da galeria
       </button>
       <button type="button" class="btn btn-o" style="max-width:320px" onclick="prepareNew();showView('form')">
         ✏️ Adicionar manualmente
       </button>
     </div>
+
+    <!-- IMAGEM (partilhada entre fases 2 e 3) -->
+    <div id="ocp-imgwrap" style="display:none;padding:14px 14px 0;">
+      <div id="ocp-imgcont" style="position:relative;border-radius:14px;overflow:hidden;line-height:0;">
+        <img id="ocr-img" style="width:100%;display:block;border-radius:14px;">
+        <!-- retângulos de zona injetados aqui pelo JS -->
+        <div id="ocr-popup">
+          <p style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:6px">Atribuir campo:</p>
+          <select id="ocr-popup-sel" class="fi" style="padding:7px 10px;font-size:13px" onchange="changeZoneField(this.value)">
+            <option value="nome">👤 Nome</option>
+            <option value="email">✉️ Email</option>
+            <option value="tel">📞 Telefone</option>
+            <option value="emp">🏢 Empresa</option>
+            <option value="cargo">💼 Cargo</option>
+            <option value="notas">📝 Notas</option>
+            <option value="ignore">✕ Ignorar</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 2: progresso OCR -->
+    <div id="ocp-proc" style="display:none;padding:10px 14px;">
+      <div class="scan-msg" id="ocr-msg">⏳ A iniciar…</div>
+      <div style="background:var(--br);border-radius:8px;height:8px;margin-top:8px;">
+        <div id="ocr-bar" style="height:100%;background:var(--p);border-radius:8px;width:0%;transition:width .4s;"></div>
+      </div>
+    </div>
+
+    <!-- FASE 3: revisão de zonas -->
+    <div id="ocp-review" style="display:none;padding:10px 14px 0;">
+      <p style="font-size:13px;color:var(--tm);margin-bottom:12px;line-height:1.55;text-align:center">
+        🎨 <strong>Toca</strong> num retângulo para mudar o campo &nbsp;·&nbsp; <strong>Arrasta</strong> para reposicionar
+      </p>
+      <div class="brow">
+        <button type="button" class="btn btn-o" onclick="retakePhoto()">🔄 Nova foto</button>
+        <button type="button" class="btn btn-p" onclick="confirmOCR()">✅ Confirmar</button>
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -491,13 +535,13 @@ function showView(v){
   if(v==='home')renderLeads();
   if(v==='scan'){document.getElementById('scan-msg').textContent='A iniciar câmara…';document.getElementById('scan-msg').className='scan-msg';if(!scanning)setTimeout(startScan,250);}
   if(v==='ocr'){
-    document.getElementById('ocr-msg').textContent='📸 Fotografa o cartão de contacto';
-    document.getElementById('ocr-msg').className='scan-msg';
-    document.getElementById('ocr-prev').style.display='none';
-    document.getElementById('ocr-progress').style.display='none';
-    document.getElementById('ocr-bar').style.width='0%';
-    document.getElementById('ocr-file').value='';
-    document.getElementById('ocr-file').setAttribute('capture','environment');
+    // Reset to capture phase when entering OCR view
+    g('ocp-capture').style.display='flex';
+    g('ocp-imgwrap').style.display='none';
+    g('ocp-proc').style.display='none';
+    g('ocp-review').style.display='none';
+    g('ocr-file').value='';
+    g('ocr-file').setAttribute('capture','environment');
   }
 }
 function goBack(){editId=null;showView('home');}
@@ -792,68 +836,179 @@ function showDetail(id){
 function delLead(id){if(!confirm('Apagar este lead?'))return;D.leads=D.leads.filter(x=>x.id!==id);save();autoSync();toast('Lead apagado!');showView('home');}
 
 /* ══════════════════════════════════════
-   OCR — CARTÃO DE CONTACTO
+   OCR — EDITOR DE ZONAS
 ══════════════════════════════════════ */
+const FCOL={nome:'#1D4ED8',email:'#059669',tel:'#D97706',emp:'#7C3AED',cargo:'#0891B2',notas:'#64748B',ignore:'#94A3B8'};
+const FLBL={nome:'👤 Nome',email:'✉️ Email',tel:'📞 Tel',emp:'🏢 Empresa',cargo:'💼 Cargo',notas:'📝 Notas',ignore:'✕ Ignorar'};
+let ocrLines=[],ocrWords=[],ocrNW=0,ocrNH=0,activeMenu=null;
+
+function g(id){return document.getElementById(id);}
+
 async function doOCR(input){
   const file=input.files[0];if(!file)return;
-  const msg=document.getElementById('ocr-msg');
-  const prog=document.getElementById('ocr-progress');
-  const bar=document.getElementById('ocr-bar');
-  const prev=document.getElementById('ocr-prev');
-  const img=document.getElementById('ocr-img');
-
-  // Mostrar preview da imagem
+  input.value='';
   const url=URL.createObjectURL(file);
-  img.src=url;prev.style.display='block';
-
-  msg.textContent='⏳ A iniciar reconhecimento de texto…';
-  msg.className='scan-msg';
-  prog.style.display='block';bar.style.width='5%';
+  const imgEl=g('ocr-img');imgEl.src=url;
+  g('ocp-capture').style.display='none';
+  g('ocp-imgwrap').style.display='block';
+  g('ocp-proc').style.display='block';
+  g('ocp-review').style.display='none';
+  g('ocr-bar').style.width='5%';
+  g('ocr-msg').textContent='⏳ A preparar OCR…';
+  g('ocr-msg').className='scan-msg';
 
   try{
-    const result=await Tesseract.recognize(file,'por+eng',{
+    const res=await Tesseract.recognize(file,'por+eng',{
       logger:m=>{
-        if(m.status==='recognizing text'){
-          const pct=Math.round(m.progress*100);
-          bar.style.width=pct+'%';
-          msg.textContent='🔍 A ler texto… '+pct+'%';
-        } else if(m.status==='loading tesseract core'||m.status==='initializing tesseract'){
-          msg.textContent='⏳ A carregar motor OCR…';bar.style.width='15%';
-        } else if(m.status==='loading language traineddata'||m.status==='initializing api'){
-          msg.textContent='⏳ A carregar idioma…';bar.style.width='30%';
-        }
+        const bar=g('ocr-bar'),msg=g('ocr-msg');
+        if(m.status==='recognizing text'){bar.style.width=Math.round(m.progress*100)+'%';msg.textContent='🔍 A ler texto… '+Math.round(m.progress*100)+'%';}
+        else if(m.status.includes('load')||m.status.includes('initial')){msg.textContent='⏳ A carregar…';bar.style.width='20%';}
       }
     });
-
     URL.revokeObjectURL(url);
-    prog.style.display='none';
+    await new Promise(r=>{if(imgEl.complete)r();else imgEl.onload=r;});
+    ocrNW=imgEl.naturalWidth;ocrNH=imgEl.naturalHeight;
+    ocrWords=(res.data.words||[]).filter(w=>w.text.trim()&&w.confidence>20);
+    const rawLines=(res.data.lines||[]).filter(l=>l.text.trim()&&l.confidence>25);
 
-    const raw=result.data.text||'';
-    const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>1);
-
-    if(!lines.length){
-      msg.textContent='⚠️ Texto não detetado. Tenta com mais luz e foco na câmara.';
-      msg.className='scan-msg scan-err';
-      input.value='';return;
+    if(!rawLines.length){
+      g('ocr-msg').textContent='⚠️ Sem texto detetado. Tenta com mais luz e foco.';
+      g('ocr-msg').className='scan-msg scan-err';
+      g('ocp-proc').style.display='none';
+      return;
     }
-
-    const contact=smartAlloc(lines);
-    // Se não extraiu campos úteis, coloca tudo nas notas
-    if(!contact.nome&&!contact.email&&!contact.tel){
-      contact.notas=lines.join('\n');
-    }
-
-    msg.textContent='✅ Texto lido! A abrir formulário…';
-    toast('Cartão lido com sucesso!');
-    setTimeout(()=>{prepareNew(contact);showView('form');},700);
-
+    ocrLines=rawLines.map(l=>({id:uid(),text:l.text.trim(),bbox:{...l.bbox},field:'?'}));
+    autoFields();
+    g('ocp-proc').style.display='none';
+    g('ocp-review').style.display='block';
+    renderZones();
   }catch(e){
     URL.revokeObjectURL(url);
-    prog.style.display='none';
-    msg.textContent='❌ Erro OCR: '+(e.message||e);
-    msg.className='scan-msg scan-err';
+    g('ocp-proc').style.display='none';
+    g('ocp-imgwrap').style.display='none';
+    g('ocp-capture').style.display='flex';
+    alert('Erro OCR: '+(e.message||e));
   }
-  input.value='';
+}
+
+function autoFields(){
+  let nNome=false,nEmp=false,nCargo=false;
+  // Pass 1: detect by content
+  for(const z of ocrLines){
+    const t=z.text;
+    if(/[\w.+\-]+@[\w.\-]+\.\w{2,}/.test(t)){z.field='email';continue;}
+    const d=t.replace(/\D/g,'');
+    if(d.length>=7&&d.length<=15&&/^[+\d][\d\s\-().]{5,}$/.test(t)){z.field='tel';continue;}
+    if(/^https?:\/\/|^www\./i.test(t)){z.field='notas';continue;}
+    if(/\b(S\.?A\.?|Lda\.?|Ltd\.?|Inc\.?|Corp\.?|SL|GmbH|SARL)\b/i.test(t)){z.field='emp';nEmp=true;continue;}
+    z.field='?';
+  }
+  // Pass 2: assign remaining by position/order
+  for(const z of ocrLines){
+    if(z.field!=='?')continue;
+    const w=z.text.split(/\s+/).filter(Boolean);
+    if(!nNome&&w.length>=1&&w.length<=5&&/^[A-Za-zÀ-ÿ]/.test(z.text)){z.field='nome';nNome=true;}
+    else if(nNome&&!nCargo&&w.length<=7){z.field='cargo';nCargo=true;}
+    else if(nNome&&!nEmp&&w.length<=8){z.field='emp';nEmp=true;}
+    else{z.field='notas';}
+  }
+}
+
+function renderZones(){
+  const cont=g('ocp-imgcont');
+  cont.querySelectorAll('.ocr-zone').forEach(e=>e.remove());
+  g('ocr-popup').style.display='none';
+  const imgEl=g('ocr-img');
+  const sx=imgEl.offsetWidth/ocrNW, sy=imgEl.offsetHeight/ocrNH;
+
+  for(const zone of ocrLines){
+    if(zone.field==='ignore')continue;
+    const col=FCOL[zone.field]||'#94A3B8';
+    const el=document.createElement('div');
+    el.className='ocr-zone';
+    el.dataset.zid=zone.id;
+    const l=zone.bbox.x0*sx,t=zone.bbox.y0*sy,w=(zone.bbox.x1-zone.bbox.x0)*sx,hh=(zone.bbox.y1-zone.bbox.y0)*sy;
+    el.style.cssText=`left:${l}px;top:${t}px;width:${Math.max(w,40)}px;height:${Math.max(hh,20)}px;border:2.5px solid ${col};background:${col}25;`;
+    const lbl=document.createElement('span');lbl.className='ocr-lbl';
+    lbl.style.background=col;lbl.textContent=FLBL[zone.field]||zone.field;
+    el.appendChild(lbl);
+    setupZone(el,zone,imgEl,sx,sy);
+    zone.el=el;cont.appendChild(el);
+  }
+}
+
+function setupZone(el,zone,imgEl,sx,sy){
+  let px,py,pl,pt,moved=false;
+  el.addEventListener('pointerdown',e=>{
+    if(e.target===g('ocr-popup')||e.target.closest('#ocr-popup'))return;
+    moved=false;el.setPointerCapture(e.pointerId);
+    const er=el.getBoundingClientRect(),ir=imgEl.getBoundingClientRect();
+    px=e.clientX;py=e.clientY;pl=er.left-ir.left;pt=er.top-ir.top;
+    el.style.zIndex='5';g('ocr-popup').style.display='none';
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!el.hasPointerCapture(e.pointerId))return;
+    const dx=e.clientX-px,dy=e.clientY-py;
+    if(Math.abs(dx)+Math.abs(dy)>6)moved=true;
+    el.style.left=(pl+dx)+'px';el.style.top=(pt+dy)+'px';
+  });
+  el.addEventListener('pointerup',e=>{
+    el.style.zIndex='';
+    if(moved){
+      // Re-extract text from new position using word bboxes
+      const ir=imgEl.getBoundingClientRect(),er=el.getBoundingClientRect();
+      const nl=(er.left-ir.left)/sx, nt=(er.top-ir.top)/sy;
+      const bw=zone.bbox.x1-zone.bbox.x0, bh=zone.bbox.y1-zone.bbox.y0;
+      zone.bbox={x0:nl,y0:nt,x1:nl+bw,y1:nt+bh};
+      const extracted=ocrWords
+        .filter(w=>{const cx=(w.bbox.x0+w.bbox.x1)/2,cy=(w.bbox.y0+w.bbox.y1)/2;return cx>=zone.bbox.x0&&cx<=zone.bbox.x1&&cy>=zone.bbox.y0&&cy<=zone.bbox.y1;})
+        .map(w=>w.text).join(' ').trim();
+      if(extracted)zone.text=extracted;
+    } else {
+      // Tap → show field menu
+      showZoneMenu(zone,el);
+    }
+  });
+}
+
+function showZoneMenu(zone,el){
+  activeMenu=zone;
+  g('ocr-popup-sel').value=zone.field;
+  const popup=g('ocr-popup'),cont=g('ocp-imgcont');
+  const er=el.getBoundingClientRect(),cr=cont.getBoundingClientRect();
+  let top=er.bottom-cr.top+4, left=el.offsetLeft;
+  if(left+170>cr.width)left=cr.width-174;
+  if(top>cr.height-90)top=el.offsetTop-88;
+  popup.style.top=top+'px';popup.style.left=left+'px';
+  popup.style.display='block';
+}
+function changeZoneField(val){
+  if(!activeMenu)return;
+  activeMenu.field=val;activeMenu=null;
+  renderZones();
+}
+document.addEventListener('click',e=>{
+  if(g('ocr-popup')&&!e.target.closest('#ocr-popup')&&!e.target.closest('.ocr-zone'))
+    g('ocr-popup').style.display='none';
+});
+
+function confirmOCR(){
+  const c={nome:'',email:'',tel:'',emp:'',cargo:'',notas:''};
+  for(const z of ocrLines){
+    if(z.field==='ignore'||!z.text)continue;
+    if(z.field in c) c[z.field]+=(c[z.field]?' ':'')+z.text;
+  }
+  prepareNew(c);showView('form');
+}
+
+function retakePhoto(){
+  ocrLines=[];ocrWords=[];
+  g('ocp-imgwrap').style.display='none';
+  g('ocp-review').style.display='none';
+  g('ocp-proc').style.display='none';
+  g('ocp-capture').style.display='flex';
+  g('ocr-file').value='';
+  g('ocr-file').setAttribute('capture','environment');
 }
 
 /* ══════════════════════════════════════
