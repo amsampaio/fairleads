@@ -140,9 +140,11 @@ a.dval{color:var(--p);text-decoration:none;}
 .modal-t{font-size:18px;font-weight:800;margin-bottom:18px;}
 
 /* PIN */
-.pin-box{display:flex;gap:12px;justify-content:center;margin:20px 0;}
-.pin-d{width:52px;height:60px;border:2px solid var(--br);border-radius:12px;font-size:28px;text-align:center;outline:none;background:#fff;color:var(--t);-webkit-appearance:none;}
-.pin-d:focus{border-color:var(--p);}
+.pin-box{display:flex;gap:14px;justify-content:center;margin:20px 0;}
+.pin-d{width:52px;height:60px;border:2px solid var(--br);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;transition:border-color .15s;}
+.pin-d::after{content:'';width:18px;height:18px;border-radius:50%;background:var(--br);transition:background .12s;}
+.pin-d.filled::after{background:var(--p);}
+.pin-d.active{border-color:var(--p);}
 
 /* OCR ZONES */
 .ocr-zone{position:absolute;border-radius:4px;cursor:pointer;touch-action:none;box-sizing:border-box;transition:box-shadow .15s;}
@@ -372,10 +374,6 @@ a.dval{color:var(--p);text-decoration:none;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     <span>Novo</span>
   </button>
-  <button class="ni" id="n-export" onclick="exportCSV()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    <span>Exportar</span>
-  </button>
   <button class="ni" id="n-ocr" onclick="showView('ocr')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="2" y="6" width="20" height="13" rx="2"/>
@@ -390,13 +388,18 @@ a.dval{color:var(--p);text-decoration:none;}
 <div class="mov" id="m-pin" onclick="closeMov(event,'m-pin')">
   <div class="modal">
     <div class="modal-t">🔐 PIN de Acesso</div>
-    <p style="font-size:14px;color:var(--tm)">Introduz o PIN para aceder às definições</p>
-    <div class="pin-box">
-      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p0" oninput="pinNav(0)" onkeydown="pinKey(event,0)">
-      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p1" oninput="pinNav(1)" onkeydown="pinKey(event,1)">
-      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p2" oninput="pinNav(2)" onkeydown="pinKey(event,2)">
-      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p3" oninput="pinNav(3)" onkeydown="pinKey(event,3)">
+    <p style="font-size:14px;color:var(--tm);margin-bottom:16px">Introduz o PIN para aceder às definições</p>
+    <!-- Visual dot indicators — the actual input is hidden -->
+    <div class="pin-box" onclick="document.getElementById('pin-hidden').focus()" style="cursor:pointer">
+      <div class="pin-d" id="pd0"></div>
+      <div class="pin-d" id="pd1"></div>
+      <div class="pin-d" id="pd2"></div>
+      <div class="pin-d" id="pd3"></div>
     </div>
+    <!-- Single hidden input collects keystrokes — opacity:0, size 0, no caret -->
+    <input id="pin-hidden" type="tel" inputmode="numeric" maxlength="4" autocomplete="off"
+      style="position:absolute;opacity:0;width:1px;height:1px;border:none;outline:none;caret-color:transparent;"
+      oninput="pinHiddenInput()" onkeydown="pinHiddenKey(event)">
     <p id="pin-err" style="color:var(--err);font-size:13px;text-align:center;display:none;margin-bottom:8px">PIN incorreto. Tenta novamente.</p>
     <button class="btn btn-o" onclick="closeMov(null,'m-pin',true)">Cancelar</button>
   </div>
@@ -457,6 +460,11 @@ a.dval{color:var(--p);text-decoration:none;}
     <button class="btn btn-p" onclick="saveSettings()">💾 Guardar Definições</button>
 
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--br)">
+      <p style="font-size:12px;color:var(--tm);margin-bottom:10px">📤 Exportar dados</p>
+      <button class="btn btn-o" onclick="exportCSV()">⬇️ Exportar Leads (CSV)</button>
+    </div>
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">
       <p style="font-size:12px;color:var(--tm);margin-bottom:10px">⚠️ Zona de perigo</p>
       <button class="btn btn-d" onclick="clearAll()">🗑️ Apagar todos os leads locais</button>
     </div>
@@ -489,23 +497,43 @@ function hashPin(p){let h=5381;for(let i=0;i<p.length;i++)h=((h<<5)+h)^p.charCod
 
 function settingsClick(){
   if(!D.cfg.pin){openSettings();return;}
-  [0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');
+  const h=document.getElementById('pin-hidden');
+  h.value='';
   document.getElementById('pin-err').style.display='none';
+  updatePinDots('');
   openMov('m-pin');
-  setTimeout(()=>document.getElementById('p0').focus(),200);
+  setTimeout(()=>h.focus(),200);
 }
-function pinNav(i){
-  const v=document.getElementById('p'+i).value.replace(/\D/g,'');
-  document.getElementById('p'+i).value=v.slice(-1);
-  if(v&&i<3)document.getElementById('p'+(i+1)).focus();
-  if(i===3)checkPin();
+function updatePinDots(val){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('filled',i<val.length);
+    d.classList.toggle('active',i===val.length);
+  }
 }
-function pinKey(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();}
+function pinHiddenInput(){
+  const h=document.getElementById('pin-hidden');
+  const val=h.value.replace(/\D/g,'').slice(0,4);
+  h.value=val;
+  updatePinDots(val);
+  if(val.length===4)checkPin();
+}
+function pinHiddenKey(e){
+  if(e.key==='Enter'){const h=document.getElementById('pin-hidden');if(h.value.length===4)checkPin();}
+}
 function checkPin(){
-  const entered=[0,1,2,3].map(i=>document.getElementById('p'+i).value).join('');
+  const entered=document.getElementById('pin-hidden').value;
   if(entered.length<4)return;
   if(hashPin(entered)===D.cfg.pin){closeMov(null,'m-pin',true);openSettings();}
-  else{document.getElementById('pin-err').style.display='block';setTimeout(()=>{[0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');document.getElementById('p0').focus();},600);}
+  else{
+    document.getElementById('pin-err').style.display='block';
+    setTimeout(()=>{
+      const h=document.getElementById('pin-hidden');
+      h.value=''; updatePinDots('');
+      h.focus();
+      document.getElementById('pin-err').style.display='none';
+    },700);
+  }
 }
 
 /* ══════════════════════════════════════
@@ -836,173 +864,149 @@ function showDetail(id){
 function delLead(id){if(!confirm('Apagar este lead?'))return;D.leads=D.leads.filter(x=>x.id!==id);save();autoSync();toast('Lead apagado!');showView('home');}
 
 /* ══════════════════════════════════════
-   OCR — EDITOR DE ZONAS
+   OCR — EDITOR DE ZONAS FIXAS
+   Campos: Nome, Empresa, Cargo, Email,
+           Tel, Notas (2 linhas)
+   Sem Produto. O utilizador arrasta cada
+   zona para cobrir o texto correto.
 ══════════════════════════════════════ */
-const FCOL={nome:'#1D4ED8',email:'#059669',tel:'#D97706',emp:'#7C3AED',cargo:'#0891B2',notas:'#64748B',ignore:'#94A3B8'};
-const FLBL={nome:'👤 Nome',email:'✉️ Email',tel:'📞 Tel',emp:'🏢 Empresa',cargo:'💼 Cargo',notas:'📝 Notas',ignore:'✕ Ignorar'};
-let ocrLines=[],ocrWords=[],ocrNW=0,ocrNH=0,activeMenu=null;
+const FCOL={nome:'#1D4ED8',emp:'#7C3AED',cargo:'#0891B2',email:'#059669',tel:'#D97706',notas:'#64748B'};
+const FLBL={nome:'👤 Nome',emp:'🏢 Empresa',cargo:'💼 Cargo',email:'✉️ Email',tel:'📞 Telefone',notas:'📝 Notas'};
+
+// Posições default como fracção da imagem (y, height)
+// Distribuídas igualmente; notas mais baixa e mais pequena (2 linhas)
+const ZONE_DEFS=[
+  {field:'nome',   y:0.03, h:0.13},
+  {field:'emp',    y:0.20, h:0.13},
+  {field:'cargo',  y:0.37, h:0.11},
+  {field:'email',  y:0.52, h:0.11},
+  {field:'tel',    y:0.67, h:0.11},
+  {field:'notas',  y:0.82, h:0.13}, // ~2 linhas de texto
+];
+
+let ocrLines=[], ocrWords=[], ocrNW=0, ocrNH=0;
 
 function g(id){return document.getElementById(id);}
 
 async function doOCR(input){
-  const file=input.files[0];if(!file)return;
+  const file=input.files[0]; if(!file)return;
   input.value='';
   const url=URL.createObjectURL(file);
-  const imgEl=g('ocr-img');imgEl.src=url;
+  const imgEl=g('ocr-img'); imgEl.src=url;
   g('ocp-capture').style.display='none';
   g('ocp-imgwrap').style.display='block';
   g('ocp-proc').style.display='block';
   g('ocp-review').style.display='none';
   g('ocr-bar').style.width='5%';
-  g('ocr-msg').textContent='⏳ A preparar OCR…';
+  g('ocr-msg').textContent='⏳ A ler cartão…';
   g('ocr-msg').className='scan-msg';
 
   try{
     const res=await Tesseract.recognize(file,'por+eng',{
       logger:m=>{
-        const bar=g('ocr-bar'),msg=g('ocr-msg');
-        if(m.status==='recognizing text'){bar.style.width=Math.round(m.progress*100)+'%';msg.textContent='🔍 A ler texto… '+Math.round(m.progress*100)+'%';}
-        else if(m.status.includes('load')||m.status.includes('initial')){msg.textContent='⏳ A carregar…';bar.style.width='20%';}
+        if(m.status==='recognizing text'){
+          g('ocr-bar').style.width=Math.round(m.progress*100)+'%';
+          g('ocr-msg').textContent='🔍 A reconhecer… '+Math.round(m.progress*100)+'%';
+        } else if(m.status.includes('load')||m.status.includes('initial')){
+          g('ocr-msg').textContent='⏳ A preparar…'; g('ocr-bar').style.width='20%';
+        }
       }
     });
     URL.revokeObjectURL(url);
-    await new Promise(r=>{if(imgEl.complete)r();else imgEl.onload=r;});
-    ocrNW=imgEl.naturalWidth;ocrNH=imgEl.naturalHeight;
+    await new Promise(r=>{if(imgEl.complete)r(); else imgEl.onload=r;});
+    ocrNW=imgEl.naturalWidth; ocrNH=imgEl.naturalHeight;
     ocrWords=(res.data.words||[]).filter(w=>w.text.trim()&&w.confidence>20);
-    const rawLines=(res.data.lines||[]).filter(l=>l.text.trim()&&l.confidence>25);
 
-    if(!rawLines.length){
-      g('ocr-msg').textContent='⚠️ Sem texto detetado. Tenta com mais luz e foco.';
-      g('ocr-msg').className='scan-msg scan-err';
-      g('ocp-proc').style.display='none';
-      return;
-    }
-    ocrLines=rawLines.map(l=>({id:uid(),text:l.text.trim(),bbox:{...l.bbox},field:'?'}));
-    autoFields();
+    // Criar zonas fixas com posições default
+    ocrLines=ZONE_DEFS.map(def=>({
+      id:uid(), field:def.field,
+      bbox:{x0:ocrNW*0.03, y0:ocrNH*def.y, x1:ocrNW*0.97, y1:ocrNH*(def.y+def.h)}
+    }));
+
     g('ocp-proc').style.display='none';
     g('ocp-review').style.display='block';
     renderZones();
   }catch(e){
     URL.revokeObjectURL(url);
+    // Even if OCR fails, show the zone editor so the user can still position zones manually
+    await new Promise(r=>{if(imgEl.complete)r(); else imgEl.onload=r;});
+    ocrNW=imgEl.naturalWidth||800; ocrNH=imgEl.naturalHeight||600;
+    ocrWords=[];
+    ocrLines=ZONE_DEFS.map(def=>({
+      id:uid(), field:def.field,
+      bbox:{x0:ocrNW*0.03, y0:ocrNH*def.y, x1:ocrNW*0.97, y1:ocrNH*(def.y+def.h)}
+    }));
     g('ocp-proc').style.display='none';
-    g('ocp-imgwrap').style.display='none';
-    g('ocp-capture').style.display='flex';
-    alert('Erro OCR: '+(e.message||e));
-  }
-}
-
-function autoFields(){
-  let nNome=false,nEmp=false,nCargo=false;
-  // Pass 1: detect by content
-  for(const z of ocrLines){
-    const t=z.text;
-    if(/[\w.+\-]+@[\w.\-]+\.\w{2,}/.test(t)){z.field='email';continue;}
-    const d=t.replace(/\D/g,'');
-    if(d.length>=7&&d.length<=15&&/^[+\d][\d\s\-().]{5,}$/.test(t)){z.field='tel';continue;}
-    if(/^https?:\/\/|^www\./i.test(t)){z.field='notas';continue;}
-    if(/\b(S\.?A\.?|Lda\.?|Ltd\.?|Inc\.?|Corp\.?|SL|GmbH|SARL)\b/i.test(t)){z.field='emp';nEmp=true;continue;}
-    z.field='?';
-  }
-  // Pass 2: assign remaining by position/order
-  for(const z of ocrLines){
-    if(z.field!=='?')continue;
-    const w=z.text.split(/\s+/).filter(Boolean);
-    if(!nNome&&w.length>=1&&w.length<=5&&/^[A-Za-zÀ-ÿ]/.test(z.text)){z.field='nome';nNome=true;}
-    else if(nNome&&!nCargo&&w.length<=7){z.field='cargo';nCargo=true;}
-    else if(nNome&&!nEmp&&w.length<=8){z.field='emp';nEmp=true;}
-    else{z.field='notas';}
+    g('ocr-msg').textContent='⚠️ OCR sem resultados — posiciona os retângulos manualmente';
+    g('ocr-msg').className='scan-msg scan-err';
+    g('ocp-review').style.display='block';
+    renderZones();
   }
 }
 
 function renderZones(){
   const cont=g('ocp-imgcont');
   cont.querySelectorAll('.ocr-zone').forEach(e=>e.remove());
-  g('ocr-popup').style.display='none';
   const imgEl=g('ocr-img');
   const sx=imgEl.offsetWidth/ocrNW, sy=imgEl.offsetHeight/ocrNH;
 
   for(const zone of ocrLines){
-    if(zone.field==='ignore')continue;
-    const col=FCOL[zone.field]||'#94A3B8';
+    const col=FCOL[zone.field];
     const el=document.createElement('div');
     el.className='ocr-zone';
-    el.dataset.zid=zone.id;
-    const l=zone.bbox.x0*sx,t=zone.bbox.y0*sy,w=(zone.bbox.x1-zone.bbox.x0)*sx,hh=(zone.bbox.y1-zone.bbox.y0)*sy;
-    el.style.cssText=`left:${l}px;top:${t}px;width:${Math.max(w,40)}px;height:${Math.max(hh,20)}px;border:2.5px solid ${col};background:${col}25;`;
-    const lbl=document.createElement('span');lbl.className='ocr-lbl';
-    lbl.style.background=col;lbl.textContent=FLBL[zone.field]||zone.field;
+    const l=zone.bbox.x0*sx, t=zone.bbox.y0*sy;
+    const w=(zone.bbox.x1-zone.bbox.x0)*sx, hh=(zone.bbox.y1-zone.bbox.y0)*sy;
+    el.style.cssText=`left:${l}px;top:${t}px;width:${w}px;height:${hh}px;border:2.5px solid ${col};background:${col}28;`;
+    // Etiqueta dentro da zona (não por cima para não sobrepor)
+    const lbl=document.createElement('span');
+    lbl.className='ocr-lbl';
+    lbl.style.cssText=`background:${col};top:3px;left:4px;`;
+    lbl.textContent=FLBL[zone.field];
     el.appendChild(lbl);
-    setupZone(el,zone,imgEl,sx,sy);
-    zone.el=el;cont.appendChild(el);
+    makeDrag(el,zone,imgEl,sx,sy);
+    zone.el=el; cont.appendChild(el);
   }
 }
 
-function setupZone(el,zone,imgEl,sx,sy){
-  let px,py,pl,pt,moved=false;
+function makeDrag(el,zone,imgEl,sx,sy){
+  let px,py,pl,pt;
   el.addEventListener('pointerdown',e=>{
-    if(e.target===g('ocr-popup')||e.target.closest('#ocr-popup'))return;
-    moved=false;el.setPointerCapture(e.pointerId);
+    el.setPointerCapture(e.pointerId);
     const er=el.getBoundingClientRect(),ir=imgEl.getBoundingClientRect();
-    px=e.clientX;py=e.clientY;pl=er.left-ir.left;pt=er.top-ir.top;
-    el.style.zIndex='5';g('ocr-popup').style.display='none';
+    px=e.clientX; py=e.clientY; pl=er.left-ir.left; pt=er.top-ir.top;
+    el.style.zIndex='5';
   });
   el.addEventListener('pointermove',e=>{
     if(!el.hasPointerCapture(e.pointerId))return;
-    const dx=e.clientX-px,dy=e.clientY-py;
-    if(Math.abs(dx)+Math.abs(dy)>6)moved=true;
-    el.style.left=(pl+dx)+'px';el.style.top=(pt+dy)+'px';
+    const dx=e.clientX-px, dy=e.clientY-py;
+    el.style.left=(pl+dx)+'px'; el.style.top=(pt+dy)+'px';
   });
   el.addEventListener('pointerup',e=>{
     el.style.zIndex='';
-    if(moved){
-      // Re-extract text from new position using word bboxes
-      const ir=imgEl.getBoundingClientRect(),er=el.getBoundingClientRect();
-      const nl=(er.left-ir.left)/sx, nt=(er.top-ir.top)/sy;
-      const bw=zone.bbox.x1-zone.bbox.x0, bh=zone.bbox.y1-zone.bbox.y0;
-      zone.bbox={x0:nl,y0:nt,x1:nl+bw,y1:nt+bh};
-      const extracted=ocrWords
-        .filter(w=>{const cx=(w.bbox.x0+w.bbox.x1)/2,cy=(w.bbox.y0+w.bbox.y1)/2;return cx>=zone.bbox.x0&&cx<=zone.bbox.x1&&cy>=zone.bbox.y0&&cy<=zone.bbox.y1;})
-        .map(w=>w.text).join(' ').trim();
-      if(extracted)zone.text=extracted;
-    } else {
-      // Tap → show field menu
-      showZoneMenu(zone,el);
-    }
+    // Actualizar bbox da zona para a nova posição
+    const ir=imgEl.getBoundingClientRect(), er=el.getBoundingClientRect();
+    const nl=(er.left-ir.left)/sx, nt=(er.top-ir.top)/sy;
+    const bw=zone.bbox.x1-zone.bbox.x0, bh=zone.bbox.y1-zone.bbox.y0;
+    zone.bbox={x0:nl, y0:nt, x1:nl+bw, y1:nt+bh};
   });
 }
 
-function showZoneMenu(zone,el){
-  activeMenu=zone;
-  g('ocr-popup-sel').value=zone.field;
-  const popup=g('ocr-popup'),cont=g('ocp-imgcont');
-  const er=el.getBoundingClientRect(),cr=cont.getBoundingClientRect();
-  let top=er.bottom-cr.top+4, left=el.offsetLeft;
-  if(left+170>cr.width)left=cr.width-174;
-  if(top>cr.height-90)top=el.offsetTop-88;
-  popup.style.top=top+'px';popup.style.left=left+'px';
-  popup.style.display='block';
-}
-function changeZoneField(val){
-  if(!activeMenu)return;
-  activeMenu.field=val;activeMenu=null;
-  renderZones();
-}
-document.addEventListener('click',e=>{
-  if(g('ocr-popup')&&!e.target.closest('#ocr-popup')&&!e.target.closest('.ocr-zone'))
-    g('ocr-popup').style.display='none';
-});
-
 function confirmOCR(){
   const c={nome:'',email:'',tel:'',emp:'',cargo:'',notas:''};
-  for(const z of ocrLines){
-    if(z.field==='ignore'||!z.text)continue;
-    if(z.field in c) c[z.field]+=(c[z.field]?' ':'')+z.text;
+  for(const zone of ocrLines){
+    // Extrair palavras do Tesseract que estão dentro desta zona
+    const words=ocrWords.filter(w=>{
+      const cx=(w.bbox.x0+w.bbox.x1)/2, cy=(w.bbox.y0+w.bbox.y1)/2;
+      return cx>=zone.bbox.x0&&cx<=zone.bbox.x1&&cy>=zone.bbox.y0&&cy<=zone.bbox.y1;
+    });
+    const text=words.map(w=>w.text).join(' ').trim();
+    if(text&&zone.field in c) c[zone.field]+=(c[zone.field]?' ':'')+text;
   }
-  prepareNew(c);showView('form');
+  prepareNew(c); showView('form');
 }
 
 function retakePhoto(){
-  ocrLines=[];ocrWords=[];
+  ocrLines=[]; ocrWords=[];
   g('ocp-imgwrap').style.display='none';
   g('ocp-review').style.display='none';
   g('ocp-proc').style.display='none';
