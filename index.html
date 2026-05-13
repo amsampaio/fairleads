@@ -11,265 +11,154 @@
 <title>FairLeads</title>
 <link rel="manifest" href="manifest.json">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-:root {
-  --primary: #1D4ED8;
-  --primary-light: #3B82F6;
-  --primary-dark: #1E3A8A;
-  --bg: #F1F5F9;
-  --card: #FFFFFF;
-  --text: #1E293B;
-  --text-muted: #64748B;
-  --border: #E2E8F0;
-  --success: #10B981;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --nav-h: 64px;
-  --hdr-h: 56px;
-}
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100dvh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{--p:#1D4ED8;--pl:#3B82F6;--pd:#1E3A8A;--bg:#F1F5F9;--t:#1E293B;--tm:#64748B;--br:#E2E8F0;--err:#EF4444;--ok:#10B981;--nh:64px;--hh:56px;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--t);min-height:100dvh;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 
-/* ── HEADER ── */
-.hdr {
-  position: fixed; top: 0; left: 0; right: 0;
-  height: var(--hdr-h);
-  background: var(--primary); color: #fff;
-  display: flex; align-items: center;
-  padding: 0 8px 0 4px; z-index: 100; gap: 4px;
-  box-shadow: 0 1px 6px rgba(0,0,0,.25);
-}
-.hdr-title { font-size: 17px; font-weight: 700; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hdr-btn {
-  background: none; border: none; color: #fff;
-  width: 42px; height: 42px; border-radius: 10px;
-  cursor: pointer; font-size: 20px;
-  display: flex; align-items: center; justify-content: center;
-}
-.hdr-btn:active { background: rgba(255,255,255,.2); }
+/* HEADER */
+.hdr{position:fixed;top:0;left:0;right:0;height:var(--hh);background:var(--p);color:#fff;display:flex;align-items:center;padding:0 8px;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.25);gap:4px;}
+.hdr-t{font-size:17px;font-weight:700;flex:1;padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hbtn{background:none;border:none;color:#fff;width:42px;height:42px;border-radius:10px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;}
+.hbtn:active{background:rgba(255,255,255,.2);}
+.sdot{width:9px;height:9px;border-radius:50%;background:#6EE7B7;flex-shrink:0;cursor:default;}
+.sdot.syncing{background:#FCD34D;animation:pulse 1s infinite;}
+.sdot.err{background:var(--err);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-/* ── MAIN ── */
-.main {
-  margin-top: var(--hdr-h);
-  padding-bottom: calc(var(--nav-h) + 8px);
-  min-height: calc(100dvh - var(--hdr-h));
-}
-.view-pad { padding: 14px; }
+/* MAIN */
+.main{margin-top:var(--hh);padding-bottom:calc(var(--nh)+8px);min-height:calc(100dvh - var(--hh));}
+.vp{padding:14px;}
 
-/* ── BOTTOM NAV ── */
-.bnav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: var(--nav-h); background: #fff;
-  border-top: 1px solid var(--border);
-  display: flex; z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.nitem {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 3px; background: none; border: none;
-  cursor: pointer; color: var(--text-muted); padding: 6px 0;
-}
-.nitem.active { color: var(--primary); }
-.nitem svg { width: 22px; height: 22px; }
-.nitem span { font-size: 10px; font-weight: 500; }
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nh);background:#fff;border-top:1px solid var(--br);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--tm);padding:6px 0;}
+.ni.on{color:var(--p);}
+.ni svg{width:22px;height:22px;}
+.ni span{font-size:10px;font-weight:500;}
 
-/* ── VIEWS ── */
-.view { display: none; }
-.view.active { display: block; }
+/* VIEWS */
+.view{display:none;}.view.on{display:block;}
 
-/* ── STATS ── */
-.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
-.stat {
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 12px; padding: 10px 6px; text-align: center;
-}
-.stat-n { font-size: 22px; font-weight: 800; color: var(--primary); }
-.stat-l { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.stat{background:#fff;border:1px solid var(--br);border-radius:12px;padding:10px 6px;text-align:center;}
+.stn{font-size:22px;font-weight:800;color:var(--p);}
+.stl{font-size:10px;color:var(--tm);margin-top:1px;}
 
-/* ── SEARCH ── */
-.sbar { position: relative; margin-bottom: 10px; }
-.sbar input {
-  width: 100%; padding: 10px 14px 10px 38px;
-  border: 1.5px solid var(--border); border-radius: 12px;
-  font-size: 15px; background: #fff; outline: none; color: var(--text);
-}
-.sbar input:focus { border-color: var(--primary-light); }
-.sbar-ic { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px; }
+/* SEARCH */
+.sbar{position:relative;margin-bottom:10px;}
+.sbar input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--br);border-radius:12px;font-size:15px;background:#fff;outline:none;color:var(--t);}
+.sbar input:focus{border-color:var(--pl);}
+.si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:16px;}
 
-/* ── FILTER CHIPS ── */
-.chips { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 14px; scrollbar-width: none; }
-.chips::-webkit-scrollbar { display: none; }
-.chip {
-  padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  border: 1.5px solid var(--border); background: #fff; cursor: pointer;
-  white-space: nowrap; color: var(--text-muted); flex-shrink: 0;
-}
-.chip.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* CHIPS */
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--br);background:#fff;cursor:pointer;white-space:nowrap;color:var(--tm);flex-shrink:0;}
+.chip.on{background:var(--p);color:#fff;border-color:var(--p);}
 
-/* ── LEAD CARD ── */
-.lcard {
-  background: #fff; border-radius: 14px; border: 1px solid var(--border);
-  padding: 13px 14px; margin-bottom: 9px; cursor: pointer;
-  transition: box-shadow .15s;
-}
-.lcard:active { box-shadow: 0 3px 12px rgba(0,0,0,.12); }
-.lc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
-.lc-name { font-size: 16px; font-weight: 700; }
-.lc-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-.lc-int { font-size: 12px; color: var(--primary); margin-top: 3px; }
-.badge {
-  padding: 3px 9px; border-radius: 20px; font-size: 10px;
-  font-weight: 700; text-transform: uppercase; letter-spacing: .3px; flex-shrink: 0; margin-top: 2px;
-}
-.b-pendente   { background: #FEF3C7; color: #92400E; }
-.b-contactado { background: #DBEAFE; color: #1E40AF; }
-.b-qualificado{ background: #D1FAE5; color: #065F46; }
-.b-descartado { background: #F1F5F9; color: #64748B; }
-.lc-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; }
-.lc-m { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; }
+/* LEAD CARDS */
+.lcard{background:#fff;border-radius:14px;border:1px solid var(--br);padding:13px 14px;margin-bottom:9px;cursor:pointer;}
+.lcard:active{box-shadow:0 3px 12px rgba(0,0,0,.12);}
+.lct{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.lcn{font-size:16px;font-weight:700;}
+.lcs{font-size:12px;color:var(--tm);margin-top:1px;}
+.lci{font-size:12px;color:var(--p);margin-top:3px;}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0;margin-top:2px;}
+.bp{background:#FEF3C7;color:#92400E;}
+.bcc{background:#DBEAFE;color:#1E40AF;}
+.bq{background:#D1FAE5;color:#065F46;}
+.bd{background:#F1F5F9;color:#64748B;}
+.lcm{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px;}
+.lcmi{font-size:11px;color:var(--tm);}
 
-/* ── EMPTY ── */
-.empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-.empty .ei { font-size: 52px; margin-bottom: 12px; }
-.empty h3 { font-size: 18px; color: var(--text); margin-bottom: 7px; }
-.empty p { font-size: 14px; line-height: 1.55; }
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--tm);}
+.empty .ei{font-size:52px;margin-bottom:12px;}
+.empty h3{font-size:18px;color:var(--t);margin-bottom:7px;}
+.empty p{font-size:14px;line-height:1.55;}
 
-/* ── SCAN VIEW ── */
-.scan-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px; }
-.cam-box {
-  width: 100%; max-width: 380px; aspect-ratio: 1;
-  background: #000; border-radius: 18px; overflow: hidden;
-  position: relative; display: none;
-}
-#qr-video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cam-ov { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.cam-fr {
-  width: 190px; height: 190px; border: 2.5px solid #fff;
-  border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
-  position: relative;
-}
-.cam-line {
-  position: absolute; left: -2px; right: -2px; height: 2px;
-  background: #60A5FA; border-radius: 2px;
-  animation: scan 2s linear infinite;
-}
-@keyframes scan { 0%{top:0} 100%{top:calc(100% - 2px)} }
-#scan-ok {
-  width: 100%; max-width: 380px; background: #D1FAE5;
-  border: 1px solid #6EE7B7; border-radius: 12px;
-  padding: 11px 16px; font-size: 14px; color: #065F46; display: none;
-}
-.scan-hint { text-align: center; color: var(--text-muted); font-size: 14px; max-width: 300px; line-height: 1.5; }
-canvas#qr-cv { display: none; }
+/* SCAN VIEW */
+.scanwrap{display:flex;flex-direction:column;align-items:center;padding:16px;gap:14px;}
+.cambox{width:100%;max-width:380px;aspect-ratio:1;background:#111;border-radius:18px;overflow:hidden;position:relative;}
+#qr-video{width:100%;height:100%;object-fit:cover;display:block;}
+.camov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.camfr{width:190px;height:190px;border:2.5px solid #fff;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative;}
+.camln{position:absolute;left:-2px;right:-2px;height:2px;background:#60A5FA;border-radius:2px;animation:scan 2s linear infinite;}
+@keyframes scan{0%{top:0}100%{top:calc(100% - 2px)}}
+canvas#qr-cv{display:none;}
+.scan-msg{background:#fff;border:1px solid var(--br);border-radius:12px;padding:11px 16px;font-size:14px;color:var(--t);width:100%;max-width:380px;text-align:center;}
+.scan-err{background:#FEF2F2;border-color:#FECACA;color:var(--err);}
 
-/* ── FORM ── */
-.fsec { margin-bottom: 20px; }
-.fsec-t {
-  font-size: 11px; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: .6px; margin-bottom: 9px;
-}
-.fg { margin-bottom: 11px; }
-.fl { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 3px; }
-.fi {
-  width: 100%; padding: 11px 13px;
-  border: 1.5px solid var(--border); border-radius: 10px;
-  font-size: 15px; color: var(--text); outline: none;
-  background: #fff; transition: border-color .2s; -webkit-appearance: none;
-}
-.fi:focus { border-color: var(--primary-light); }
-textarea.fi { resize: vertical; min-height: 80px; }
-.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* FORM */
+.fsec{margin-bottom:20px;}
+.fst{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px;}
+.fg{margin-bottom:11px;}
+.fl{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--tm);margin-bottom:3px;}
+.fi{width:100%;padding:11px 13px;border:1.5px solid var(--br);border-radius:10px;font-size:15px;color:var(--t);outline:none;background:#fff;-webkit-appearance:none;}
+.fi:focus{border-color:var(--pl);}
+textarea.fi{resize:vertical;min-height:80px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-/* ── BUTTONS ── */
-.btn {
-  width: 100%; padding: 14px; border-radius: 12px; font-size: 15px;
-  font-weight: 700; cursor: pointer; border: none;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.btn-p { background: var(--primary); color: #fff; }
-.btn-p:active { background: var(--primary-dark); }
-.btn-o { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
-.btn-d { background: #fff; color: var(--danger); border: 1.5px solid var(--danger); }
-.btn-sm { width: auto; padding: 10px 20px; font-size: 14px; }
-.btns-row { display: flex; gap: 10px; }
-.btns-row .btn { flex: 1; }
+/* PRODUCT SUGGESTION DROPDOWN */
+.prod-wrap{position:relative;}
+.sugg-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--pl);border-top:none;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:60;display:none;box-shadow:0 6px 16px rgba(0,0,0,.12);}
+.sugg-item{padding:10px 13px;font-size:14px;cursor:pointer;color:var(--t);}
+.sugg-item:hover,.sugg-item:active{background:var(--bg);}
+.sugg-item.sep{font-size:11px;color:var(--tm);padding:6px 13px;background:var(--bg);cursor:default;font-weight:600;}
 
-/* ── DETAIL ── */
-.d-hero {
-  display: flex; align-items: center; gap: 12px;
-  background: #fff; padding: 16px; border-radius: 14px;
-  border: 1px solid var(--border); margin-bottom: 12px;
-}
-.d-av {
-  width: 50px; height: 50px; background: var(--primary);
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 22px; font-weight: 800; flex-shrink: 0;
-}
-.d-av-name { font-size: 18px; font-weight: 800; }
-.d-av-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-.dcard { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 4px 12px; margin-bottom: 12px; }
-.drow { display: flex; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 12px; }
-.drow:last-child { border-bottom: none; }
-.dic { font-size: 16px; flex-shrink: 0; width: 24px; }
-.dlbl { font-size: 11px; color: var(--text-muted); margin-bottom: 1px; }
-.dval { font-size: 14px; color: var(--text); }
-a.dval { color: var(--primary); text-decoration: none; }
+/* MIC BUTTON */
+.mic-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:2px 6px;border-radius:6px;color:var(--tm);line-height:1;transition:color .2s;}
+.mic-btn.on{color:var(--err);animation:pulse 1s infinite;}
 
-/* ── MODAL ── */
-.modal-ov {
-  position: fixed; inset: 0; background: rgba(0,0,0,.5);
-  z-index: 200; display: none; align-items: flex-end;
-}
-.modal-ov.open { display: flex; }
-.modal {
-  background: #fff; border-radius: 22px 22px 0 0;
-  padding: 24px 20px; width: 100%; max-height: 85vh; overflow-y: auto;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
-}
-.modal-t { font-size: 18px; font-weight: 800; margin-bottom: 18px; }
+/* BUTTONS */
+.btn{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-p{background:var(--p);color:#fff;}
+.btn-p:active{background:var(--pd);}
+.btn-o{background:#fff;color:var(--t);border:1.5px solid var(--br);}
+.btn-d{background:#fff;color:var(--err);border:1.5px solid var(--err);}
+.brow{display:flex;gap:10px;}
+.brow .btn{flex:1;}
 
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: calc(var(--nav-h) + 18px); left: 50%;
-  transform: translateX(-50%) translateY(16px);
-  background: #1E293B; color: #fff;
-  padding: 10px 22px; border-radius: 28px;
-  font-size: 14px; font-weight: 600;
-  opacity: 0; transition: all .25s; z-index: 400; white-space: nowrap;
-  pointer-events: none;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* DETAIL */
+.dhero{display:flex;align-items:center;gap:12px;background:#fff;padding:16px;border-radius:14px;border:1px solid var(--br);margin-bottom:12px;}
+.dav{width:50px;height:50px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0;}
+.davn{font-size:18px;font-weight:800;}
+.davs{font-size:13px;color:var(--tm);margin-top:2px;}
+.dcard{background:#fff;border:1px solid var(--br);border-radius:12px;padding:4px 12px;margin-bottom:12px;}
+.drow{display:flex;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--br);gap:12px;}
+.drow:last-child{border-bottom:none;}
+.dic{font-size:16px;flex-shrink:0;width:24px;}
+.dlbl{font-size:11px;color:var(--tm);margin-bottom:1px;}
+.dval{font-size:14px;color:var(--t);}
+a.dval{color:var(--p);text-decoration:none;}
 
-/* ── FAB ── */
-.fab {
-  position: fixed; right: 18px; bottom: calc(var(--nav-h) + 18px);
-  width: 54px; height: 54px; background: var(--primary);
-  border-radius: 50%; color: #fff; font-size: 28px;
-  border: none; cursor: pointer; z-index: 90;
-  box-shadow: 0 4px 14px rgba(29,78,216,.45);
-  display: flex; align-items: center; justify-content: center;
-}
-.fab:active { transform: scale(.93); }
+/* MODAL */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;}
+.mov.on{display:flex;}
+.modal{background:#fff;border-radius:22px 22px 0 0;padding:24px 20px;width:100%;max-height:90vh;overflow-y:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.modal-t{font-size:18px;font-weight:800;margin-bottom:18px;}
+
+/* PIN */
+.pin-box{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pin-d{width:52px;height:60px;border:2px solid var(--br);border-radius:12px;font-size:28px;text-align:center;outline:none;background:#fff;color:var(--t);-webkit-appearance:none;}
+.pin-d:focus{border-color:var(--p);}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--nh)+18px);left:50%;transform:translateX(-50%) translateY(16px);background:#1E293B;color:#fff;padding:10px 22px;border-radius:28px;font-size:14px;font-weight:600;opacity:0;transition:all .25s;z-index:400;white-space:nowrap;pointer-events:none;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="hdr" id="hdr">
-  <button class="hdr-btn" id="hdr-back" style="display:none" onclick="goBack()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22">
-      <polyline points="15,18 9,12 15,6"/>
-    </svg>
+  <button class="hbtn" id="hbk" style="display:none" onclick="goBack()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><polyline points="15,18 9,12 15,6"/></svg>
   </button>
-  <span class="hdr-title" id="hdr-title">FairLeads</span>
-  <button class="hdr-btn" id="hdr-set" onclick="openSettings()" title="Definições">
+  <span class="hdr-t" id="hdrt">FairLeads</span>
+  <div id="sdot" class="sdot" style="display:none" title="GitHub sync"></div>
+  <button class="hbtn" id="hset" onclick="settingsClick()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -280,96 +169,98 @@ a.dval { color: var(--primary); text-decoration: none; }
 <!-- MAIN -->
 <div class="main">
 
-  <!-- ① HOME -->
-  <div class="view active view-pad" id="v-home">
+  <!-- HOME -->
+  <div class="view on vp" id="v-home">
     <div class="stats" id="stats"></div>
     <div class="sbar">
-      <span class="sbar-ic">🔍</span>
+      <span class="si">🔍</span>
       <input type="search" id="search" placeholder="Pesquisar leads…" oninput="renderLeads()" autocomplete="off">
     </div>
     <div class="chips">
-      <button class="chip on" data-f="all"         onclick="setFilter('all',this)">Todos</button>
-      <button class="chip"    data-f="pendente"    onclick="setFilter('pendente',this)">⏳ Pendente</button>
-      <button class="chip"    data-f="contactado"  onclick="setFilter('contactado',this)">📞 Contactado</button>
-      <button class="chip"    data-f="qualificado" onclick="setFilter('qualificado',this)">✅ Qualificado</button>
-      <button class="chip"    data-f="descartado"  onclick="setFilter('descartado',this)">❌ Descartado</button>
+      <button class="chip on" onclick="setF('all',this)">Todos</button>
+      <button class="chip"    onclick="setF('pendente',this)">⏳ Pendente</button>
+      <button class="chip"    onclick="setF('contactado',this)">📞 Contactado</button>
+      <button class="chip"    onclick="setF('qualificado',this)">✅ Qualificado</button>
+      <button class="chip"    onclick="setF('descartado',this)">❌ Descartado</button>
     </div>
-    <div id="leads-list"></div>
+    <div id="llist"></div>
   </div>
 
-  <!-- ② SCAN -->
+  <!-- SCAN — câmara abre automaticamente -->
   <div class="view" id="v-scan">
-    <div class="scan-wrap">
-      <div class="cam-box" id="cam-box">
+    <div class="scanwrap">
+      <div class="cambox" id="cambox">
         <video id="qr-video" autoplay playsinline muted></video>
         <canvas id="qr-cv"></canvas>
-        <div class="cam-ov"><div class="cam-fr"><div class="cam-line"></div></div></div>
+        <div class="camov"><div class="camfr"><div class="camln"></div></div></div>
       </div>
-      <div id="scan-ok"></div>
-      <p class="scan-hint" id="scan-hint">Aponta a câmara para um QR Code de cartão de visita (vCard, meCard ou JSON)</p>
-      <button class="btn btn-p" id="btn-scan-start" style="max-width:300px" onclick="startScan()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>
-        Iniciar Scanner
-      </button>
-      <button class="btn btn-d" id="btn-scan-stop" style="max-width:300px;display:none" onclick="stopScan()">
-        ⏹ Parar Scanner
-      </button>
-      <button class="btn btn-o" style="max-width:300px" onclick="prepareNew();showView('form')">
+      <div class="scan-msg" id="scan-msg">A iniciar câmara…</div>
+      <button class="btn btn-o" style="max-width:320px;margin-top:4px" onclick="prepareNew();showView('form')">
         ✏️ Adicionar manualmente
       </button>
     </div>
   </div>
 
-  <!-- ③ FORM -->
-  <div class="view view-pad" id="v-form">
-    <form id="lead-form" onsubmit="saveLead(event)">
+  <!-- FORM -->
+  <div class="view vp" id="v-form">
+    <form id="lform" onsubmit="saveLead(event)">
+
       <div class="fsec">
-        <div class="fsec-t">👤 Contacto</div>
+        <div class="fst">👤 Contacto</div>
         <div class="fg">
-          <label class="fl">Nome completo *</label>
+          <label class="fl"><span>Nome completo *</span></label>
           <input class="fi" type="text" id="f-nome" placeholder="João Silva" required>
         </div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">Email</label>
-            <input class="fi" type="email" id="f-email" placeholder="joao@empresa.com">
-          </div>
-          <div class="fg">
-            <label class="fl">Telefone</label>
-            <input class="fi" type="tel" id="f-tel" placeholder="+351 91…">
-          </div>
+        <div class="fg">
+          <label class="fl"><span>Email</span></label>
+          <input class="fi" type="email" id="f-email" placeholder="nome.apelido@empresa.com" inputmode="email" autocomplete="email">
+        </div>
+        <div class="fg">
+          <label class="fl"><span>Telefone</span></label>
+          <input class="fi" type="tel" id="f-tel" placeholder="+351 91 234 5678" autocomplete="tel">
         </div>
       </div>
+
       <div class="fsec">
-        <div class="fsec-t">🏢 Empresa</div>
+        <div class="fst">🏢 Empresa</div>
         <div class="fg">
-          <label class="fl">Empresa</label>
+          <label class="fl"><span>Empresa</span></label>
           <input class="fi" type="text" id="f-emp" placeholder="Nome da empresa">
         </div>
         <div class="fg">
-          <label class="fl">Cargo</label>
+          <label class="fl"><span>Cargo</span></label>
           <input class="fi" type="text" id="f-cargo" placeholder="Director Comercial">
         </div>
       </div>
+
       <div class="fsec">
-        <div class="fsec-t">🎯 Interesse</div>
+        <div class="fst">🎯 Interesse</div>
         <div class="fg">
-          <label class="fl">Produto / Serviço de interesse</label>
-          <input class="fi" type="text" id="f-int" placeholder="Ex: Produto X, demo agendada">
+          <label class="fl">
+            <span>Produto / Serviço</span>
+            <button type="button" class="mic-btn" id="mic-int" onclick="toggleVoice('f-int','mic-int')">🎤</button>
+          </label>
+          <div class="prod-wrap">
+            <input class="fi" type="text" id="f-int"
+              placeholder="Seleciona ou escreve, separa por vírgulas…"
+              oninput="onProdInput()" onfocus="onProdInput()" autocomplete="off">
+            <div class="sugg-drop" id="sugg-drop"></div>
+          </div>
         </div>
         <div class="fg">
-          <label class="fl">Notas</label>
+          <label class="fl">
+            <span>Notas</span>
+            <button type="button" class="mic-btn" id="mic-notas" onclick="toggleVoice('f-notas','mic-notas')">🎤</button>
+          </label>
           <textarea class="fi" id="f-notas" placeholder="Observações da conversa…"></textarea>
         </div>
       </div>
+
       <div class="fsec">
-        <div class="fsec-t">📋 Follow-up</div>
+        <div class="fst">📋 Follow-up</div>
         <div class="frow">
           <div class="fg">
-            <label class="fl">Estado</label>
+            <label class="fl"><span>Estado</span></label>
             <select class="fi" id="f-est">
               <option value="pendente">⏳ Pendente</option>
               <option value="contactado">📞 Contactado</option>
@@ -378,68 +269,121 @@ a.dval { color: var(--primary); text-decoration: none; }
             </select>
           </div>
           <div class="fg">
-            <label class="fl">Data follow-up</label>
+            <label class="fl"><span>Data</span></label>
             <input class="fi" type="date" id="f-date">
           </div>
         </div>
       </div>
+
       <button type="submit" class="btn btn-p">💾 Guardar Lead</button>
-      <div style="height:8px"></div>
+      <div style="height:12px"></div>
     </form>
   </div>
 
-  <!-- ④ DETAIL -->
-  <div class="view view-pad" id="v-detail">
-    <div id="detail-body"></div>
+  <!-- DETAIL -->
+  <div class="view vp" id="v-detail">
+    <div id="dbody"></div>
   </div>
 
 </div>
 
 <!-- BOTTOM NAV -->
 <nav class="bnav">
-  <button class="nitem active" id="n-home" onclick="showView('home')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-      <polyline points="9,22 9,12 15,12 15,22"/>
-    </svg>
+  <button class="ni on" id="n-home" onclick="showView('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
     <span>Leads</span>
   </button>
-  <button class="nitem" id="n-scan" onclick="showView('scan')">
+  <button class="ni" id="n-scan" onclick="showView('scan')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/>
       <rect x="3" y="16" width="5" height="5" rx="1"/>
-      <path d="M16 16h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2-6h2v2h-2z"/>
+      <path d="M16 16h2v2h-2zm3 0h2v2h-2zm-3 3h2v2h-2zm3 0h2v2h-2zm-3-6h2v2h-2z"/>
     </svg>
     <span>Scan QR</span>
   </button>
-  <button class="nitem" id="n-form" onclick="prepareNew();showView('form')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="9"/>
-      <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-    </svg>
+  <button class="ni" id="n-form" onclick="prepareNew();showView('form')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     <span>Novo</span>
   </button>
-  <button class="nitem" id="n-export" onclick="exportCSV()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
+  <button class="ni" id="n-export" onclick="exportCSV()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span>Exportar</span>
   </button>
 </nav>
 
+<!-- PIN MODAL -->
+<div class="mov" id="m-pin" onclick="closeMov(event,'m-pin')">
+  <div class="modal">
+    <div class="modal-t">🔐 PIN de Acesso</div>
+    <p style="font-size:14px;color:var(--tm)">Introduz o PIN para aceder às definições</p>
+    <div class="pin-box">
+      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p0" oninput="pinNav(0)" onkeydown="pinKey(event,0)">
+      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p1" oninput="pinNav(1)" onkeydown="pinKey(event,1)">
+      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p2" oninput="pinNav(2)" onkeydown="pinKey(event,2)">
+      <input class="pin-d" type="password" inputmode="numeric" maxlength="1" id="p3" oninput="pinNav(3)" onkeydown="pinKey(event,3)">
+    </div>
+    <p id="pin-err" style="color:var(--err);font-size:13px;text-align:center;display:none;margin-bottom:8px">PIN incorreto. Tenta novamente.</p>
+    <button class="btn btn-o" onclick="closeMov(null,'m-pin',true)">Cancelar</button>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
-<div class="modal-ov" id="modal-set" onclick="closeModal(event,'modal-set')">
+<div class="mov" id="m-set" onclick="closeMov(event,'m-set')">
   <div class="modal">
     <div class="modal-t">⚙️ Definições</div>
+
+    <div class="fst">👤 Utilizador</div>
     <div class="fg">
-      <label class="fl">Nome da Feira</label>
+      <label class="fl"><span>O teu nome (guardado em cada lead)</span></label>
+      <input class="fi" type="text" id="si-user" placeholder="Ex: Ana Santos">
+    </div>
+
+    <div class="fst" style="margin-top:16px">🏟️ Feira</div>
+    <div class="fg">
+      <label class="fl"><span>Nome da Feira</span></label>
       <input class="fi" type="text" id="si-fair" placeholder="Ex: Alimentaria 2026">
     </div>
-    <button class="btn btn-p" onclick="saveFair()" style="margin-top:6px">Guardar</button>
-    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">⚠️ Zona de perigo</p>
-      <button class="btn btn-d" onclick="clearAll()">🗑️ Apagar todos os leads</button>
+
+    <div class="fst" style="margin-top:16px">🎯 Produtos sugeridos</div>
+    <div class="fg">
+      <label class="fl"><span>Um produto por linha</span></label>
+      <textarea class="fi" id="si-prods" style="min-height:110px" placeholder="Produto A&#10;Produto B&#10;Serviço Premium C"></textarea>
+    </div>
+
+    <div class="fst" style="margin-top:16px">🔐 PIN de Segurança</div>
+    <p style="font-size:12px;color:var(--tm);margin-bottom:8px">Deixa em branco para não alterar o PIN atual. Para remover o PIN, coloca "0000".</p>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg">
+        <label class="fl"><span>Novo PIN (4 dígitos)</span></label>
+        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin" placeholder="••••">
+      </div>
+      <div class="fg">
+        <label class="fl"><span>Confirmar PIN</span></label>
+        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin2" placeholder="••••">
+      </div>
+    </div>
+
+    <div class="fst" style="margin-top:4px">🐙 Sync GitHub</div>
+    <p style="font-size:12px;color:var(--tm);margin-bottom:10px;line-height:1.6">
+      1. Cria um Gist em <strong>gist.github.com</strong><br>
+      2. Em <strong>Settings → Developer Settings → Tokens (classic)</strong>, gera um token com escopo <em>gist</em><br>
+      3. Cola o token e o ID do Gist aqui. Os leads guardam-se automaticamente e o nome da feira é partilhado entre dispositivos.
+    </p>
+    <div class="fg">
+      <label class="fl"><span>GitHub Token</span></label>
+      <input class="fi" type="password" id="si-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label class="fl"><span>Gist ID</span></label>
+      <input class="fi" type="text" id="si-gist" placeholder="abc123def456…" autocomplete="off">
+    </div>
+    <button class="btn btn-o" style="margin-bottom:10px" onclick="testSync()">🔁 Testar Sincronização</button>
+
+    <button class="btn btn-p" onclick="saveSettings()">💾 Guardar Definições</button>
+
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--br)">
+      <p style="font-size:12px;color:var(--tm);margin-bottom:10px">⚠️ Zona de perigo</p>
+      <button class="btn btn-d" onclick="clearAll()">🗑️ Apagar todos os leads locais</button>
     </div>
   </div>
 </div>
@@ -447,403 +391,479 @@ a.dval { color: var(--primary); text-decoration: none; }
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- jsQR for QR Code decoding -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
 <script>
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
    DATA
-════════════════════════════════════ */
-const KEY = 'fl_v1';
-let D = { fair:'Feira', leads:[] };
-let curView = 'home';
-let editId  = null;
-let filterVal = 'all';
-let scanning  = false;
-let stream    = null;
-let raf       = null;
+══════════════════════════════════════ */
+const KEY = 'fl_v2';
+let D = { fair:'Feira', user:'', cfg:{pin:'',ghToken:'',gistId:'',products:[]}, leads:[] };
+let curV='home', editId=null, flt='all';
+let scanning=false, stream=null, raf=null;
+let recog=null;
 
-function load() {
-  try { const s = localStorage.getItem(KEY); if (s) D = JSON.parse(s); } catch(e){}
+function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[]},p.cfg||{});}}catch(e){}}
+function save(){localStorage.setItem(KEY,JSON.stringify(D));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+/* ══════════════════════════════════════
+   PIN
+══════════════════════════════════════ */
+function hashPin(p){let h=5381;for(let i=0;i<p.length;i++)h=((h<<5)+h)^p.charCodeAt(i);return(h>>>0).toString(16);}
+
+function settingsClick(){
+  if(!D.cfg.pin){openSettings();return;}
+  [0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');
+  document.getElementById('pin-err').style.display='none';
+  openMov('m-pin');
+  setTimeout(()=>document.getElementById('p0').focus(),200);
 }
-function save() { localStorage.setItem(KEY, JSON.stringify(D)); }
-function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function pinNav(i){
+  const v=document.getElementById('p'+i).value.replace(/\D/g,'');
+  document.getElementById('p'+i).value=v.slice(-1);
+  if(v&&i<3)document.getElementById('p'+(i+1)).focus();
+  if(i===3)checkPin();
+}
+function pinKey(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();}
+function checkPin(){
+  const entered=[0,1,2,3].map(i=>document.getElementById('p'+i).value).join('');
+  if(entered.length<4)return;
+  if(hashPin(entered)===D.cfg.pin){closeMov(null,'m-pin',true);openSettings();}
+  else{document.getElementById('pin-err').style.display='block';setTimeout(()=>{[0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');document.getElementById('p0').focus();},600);}
+}
 
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
    ROUTING
-════════════════════════════════════ */
-function showView(v) {
-  if (curView === 'scan' && v !== 'scan') stopScan();
-
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nitem').forEach(el => el.classList.remove('active'));
-
-  document.getElementById('v-' + v).classList.add('active');
-  const ni = document.getElementById('n-' + v);
-  if (ni) ni.classList.add('active');
-
-  const back = document.getElementById('hdr-back');
-  const set  = document.getElementById('hdr-set');
-  const ttl  = document.getElementById('hdr-title');
-
-  if (v === 'form') {
-    back.style.display = 'flex'; set.style.display = 'none';
-    ttl.textContent = editId ? 'Editar Lead' : 'Novo Lead';
-  } else if (v === 'detail') {
-    back.style.display = 'flex'; set.style.display = 'none';
-    ttl.textContent = 'Detalhes do Lead';
-  } else {
-    back.style.display = 'none'; set.style.display = 'flex';
-    ttl.textContent = v === 'scan' ? 'Scan QR Code' : D.fair;
-  }
-  curView = v;
-  if (v === 'home') renderLeads();
+══════════════════════════════════════ */
+function showView(v){
+  if(curV==='scan'&&v!=='scan')stopScan();
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  const ni=document.getElementById('n-'+v);if(ni)ni.classList.add('on');
+  const bk=document.getElementById('hbk'),hs=document.getElementById('hset'),tt=document.getElementById('hdrt'),sd=document.getElementById('sdot');
+  if(v==='form'){bk.style.display='flex';hs.style.display='none';sd.style.display='none';tt.textContent=editId?'Editar Lead':'Novo Lead';}
+  else if(v==='detail'){bk.style.display='flex';hs.style.display='none';sd.style.display='none';tt.textContent='Detalhes';}
+  else{bk.style.display='none';hs.style.display='flex';sd.style.display=D.cfg.gistId?'block':'none';tt.textContent=v==='scan'?'Scan QR Code':D.fair;}
+  curV=v;
+  if(v==='home')renderLeads();
+  if(v==='scan'){document.getElementById('scan-msg').textContent='A iniciar câmara…';document.getElementById('scan-msg').className='scan-msg';if(!scanning)setTimeout(startScan,250);}
 }
+function goBack(){editId=null;showView('home');}
 
-function goBack() { editId = null; showView('home'); }
-
-/* ════════════════════════════════════
-   HOME – RENDER
-════════════════════════════════════ */
-function renderLeads() {
+/* ══════════════════════════════════════
+   HOME
+══════════════════════════════════════ */
+function renderLeads(){
   renderStats();
-  const q = (document.getElementById('search').value || '').toLowerCase();
-  let list = D.leads.filter(l => {
-    const fok = filterVal === 'all' || l.estado === filterVal;
-    const sok = !q || ['nome','email','empresa','interesse','cargo'].some(k => (l[k]||'').toLowerCase().includes(q));
-    return fok && sok;
-  }).sort((a,b) => new Date(b.ts) - new Date(a.ts));
-
-  const el = document.getElementById('leads-list');
-  if (!list.length) {
-    el.innerHTML = `<div class="empty">
-      <div class="ei">👤</div>
-      <h3>${D.leads.length ? 'Sem resultados' : 'Sem leads ainda'}</h3>
-      <p>${D.leads.length ? 'Ajusta os filtros ou a pesquisa.' : 'Usa o scanner QR ou adiciona manualmente o teu primeiro contacto.'}</p>
-    </div>`;
-    return;
-  }
-  el.innerHTML = list.map(l => `
-    <div class="lcard" onclick="showDetail('${l.id}')">
-      <div class="lc-top">
-        <div>
-          <div class="lc-name">${h(l.nome)}</div>
-          ${(l.cargo||l.empresa)?`<div class="lc-sub">${h([l.cargo,l.empresa].filter(Boolean).join(' · '))}</div>`:''}
-          ${l.interesse?`<div class="lc-int">🎯 ${h(l.interesse)}</div>`:''}
-        </div>
-        <span class="badge b-${l.estado}">${slbl(l.estado)}</span>
-      </div>
-      <div class="lc-meta">
-        ${l.email?`<span class="lc-m">✉️ ${h(l.email)}</span>`:''}
-        ${l.tel?`<span class="lc-m">📞 ${h(l.tel)}</span>`:''}
-        ${l.date?`<span class="lc-m">📅 ${fdate(l.date)}</span>`:''}
-      </div>
-    </div>`).join('');
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  let list=D.leads.filter(l=>{
+    const fok=flt==='all'||l.estado===flt;
+    const sok=!q||['nome','email','empresa','interesse','cargo','collector'].some(k=>(l[k]||'').toLowerCase().includes(q));
+    return fok&&sok;
+  }).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  const el=document.getElementById('llist');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="ei">👤</div><h3>${D.leads.length?'Sem resultados':'Sem leads ainda'}</h3><p>${D.leads.length?'Ajusta os filtros ou a pesquisa.':'Usa o scanner QR ou adiciona o primeiro contacto manualmente.'}</p></div>`;return;}
+  el.innerHTML=list.map(l=>`<div class="lcard" onclick="showDetail('${l.id}')">
+    <div class="lct"><div>
+      <div class="lcn">${h(l.nome)}</div>
+      ${(l.cargo||l.empresa)?`<div class="lcs">${h([l.cargo,l.empresa].filter(Boolean).join(' · '))}</div>`:''}
+      ${l.interesse?`<div class="lci">🎯 ${h(l.interesse)}</div>`:''}
+    </div><span class="badge ${bclass(l.estado)}">${slbl(l.estado)}</span></div>
+    <div class="lcm">
+      ${l.email?`<span class="lcmi">✉️ ${h(l.email)}</span>`:''}
+      ${l.tel?`<span class="lcmi"> &nbsp;📞 ${h(l.tel)}</span>`:''}
+      ${l.date?`<span class="lcmi"> &nbsp;📅 ${fdate(l.date)}</span>`:''}
+      ${l.collector?`<span class="lcmi"> &nbsp;👤 ${h(l.collector)}</span>`:''}
+    </div></div>`).join('');
 }
-
-function renderStats() {
-  const tot = D.leads.length;
-  const p = D.leads.filter(l=>l.estado==='pendente').length;
-  const c = D.leads.filter(l=>l.estado==='contactado').length;
-  const q = D.leads.filter(l=>l.estado==='qualificado').length;
-  document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="stat-n">${tot}</div><div class="stat-l">Total</div></div>
-    <div class="stat"><div class="stat-n" style="color:#92400E">${p}</div><div class="stat-l">Pendente</div></div>
-    <div class="stat"><div class="stat-n" style="color:#1E40AF">${c}</div><div class="stat-l">Contact.</div></div>
-    <div class="stat"><div class="stat-n" style="color:#065F46">${q}</div><div class="stat-l">Qualific.</div></div>`;
+function renderStats(){
+  const t=D.leads.length,p=D.leads.filter(l=>l.estado==='pendente').length,c=D.leads.filter(l=>l.estado==='contactado').length,q=D.leads.filter(l=>l.estado==='qualificado').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stn">${t}</div><div class="stl">Total</div></div>
+    <div class="stat"><div class="stn" style="color:#92400E">${p}</div><div class="stl">Pendente</div></div>
+    <div class="stat"><div class="stn" style="color:#1E40AF">${c}</div><div class="stl">Contact.</div></div>
+    <div class="stat"><div class="stn" style="color:#065F46">${q}</div><div class="stl">Qualific.</div></div>`;
 }
+function setF(f,el){flt=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderLeads();}
 
-function setFilter(f, el) {
-  filterVal = f;
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  renderLeads();
-}
-
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
    QR SCANNER
-════════════════════════════════════ */
-async function startScan() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
-    });
-    const vid = document.getElementById('qr-video');
-    vid.srcObject = stream;
-    await vid.play();
-    document.getElementById('cam-box').style.display = 'block';
-    document.getElementById('btn-scan-start').style.display = 'none';
-    document.getElementById('btn-scan-stop').style.display = 'flex';
-    document.getElementById('scan-ok').style.display = 'none';
-    scanning = true;
-    raf = requestAnimationFrame(tick);
-  } catch(e) {
-    toast('Erro câmara: ' + (e.message||e));
+══════════════════════════════════════ */
+async function startScan(){
+  const msg=document.getElementById('scan-msg');
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    const vid=document.getElementById('qr-video');vid.srcObject=stream;await vid.play();
+    msg.textContent='📷 Aponta para um QR Code…';msg.className='scan-msg';
+    scanning=true;raf=requestAnimationFrame(tick);
+  }catch(e){msg.textContent='⚠️ Sem acesso à câmara: '+e.message;msg.className='scan-msg scan-err';}
+}
+function stopScan(){
+  scanning=false;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  if(raf){cancelAnimationFrame(raf);raf=null;}
+}
+function tick(){
+  if(!scanning)return;
+  const vid=document.getElementById('qr-video'),cv=document.getElementById('qr-cv');
+  if(vid.readyState===vid.HAVE_ENOUGH_DATA){
+    cv.width=vid.videoWidth;cv.height=vid.videoHeight;
+    const ctx=cv.getContext('2d');ctx.drawImage(vid,0,0);
+    const img=ctx.getImageData(0,0,cv.width,cv.height);
+    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+    if(code){stopScan();onQR(code.data);return;}
   }
+  raf=requestAnimationFrame(tick);
 }
-
-function stopScan() {
-  scanning = false;
-  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
-  if (raf) { cancelAnimationFrame(raf); raf = null; }
-  document.getElementById('cam-box').style.display = 'none';
-  document.getElementById('btn-scan-start').style.display = 'flex';
-  document.getElementById('btn-scan-stop').style.display = 'none';
-}
-
-function tick() {
-  if (!scanning) return;
-  const vid = document.getElementById('qr-video');
-  const cv  = document.getElementById('qr-cv');
-  if (vid.readyState === vid.HAVE_ENOUGH_DATA) {
-    cv.width  = vid.videoWidth;
-    cv.height = vid.videoHeight;
-    const ctx = cv.getContext('2d');
-    ctx.drawImage(vid, 0, 0);
-    const img = ctx.getImageData(0, 0, cv.width, cv.height);
-    const code = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
-    if (code) { stopScan(); onQR(code.data); return; }
-  }
-  raf = requestAnimationFrame(tick);
-}
-
-function onQR(raw) {
-  const ok = document.getElementById('scan-ok');
-  ok.textContent = '✅ QR Code lido! A abrir formulário…';
-  ok.style.display = 'block';
+function onQR(raw){
+  document.getElementById('scan-msg').textContent='✅ QR detetado! A abrir formulário…';
   toast('QR Code detetado!');
-  setTimeout(() => { prepareNew(parseQR(raw)); showView('form'); }, 700);
+  setTimeout(()=>{prepareNew(parseQR(raw));showView('form');},600);
 }
 
-function parseQR(s) {
-  const c = {};
-  // vCard
-  if (s.includes('BEGIN:VCARD')) {
-    for (const ln of s.split(/\r?\n/)) {
-      if (/^FN:/i.test(ln))                        c.nome   = ln.slice(3).trim();
-      else if (/^N:/i.test(ln) && !c.nome)         c.nome   = ln.slice(2).split(';').slice(0,2).reverse().join(' ').trim();
-      else if (/^EMAIL[;:]/i.test(ln))             c.email  = ln.split(':').slice(1).join(':').trim();
-      else if (/^TEL[;:]/i.test(ln))               c.tel    = ln.split(':').slice(1).join(':').trim();
-      else if (/^ORG:/i.test(ln))                  c.emp    = ln.slice(4).split(';')[0].trim();
-      else if (/^TITLE:/i.test(ln))                c.cargo  = ln.slice(6).trim();
-    }
-    return c;
+/* ══════════════════════════════════════
+   QR PARSER — suporta vCard, meCard,
+   JSON, URL, key=value, texto livre
+══════════════════════════════════════ */
+function parseQR(s){
+  s=(s||'').trim();
+  if(/BEGIN:VCARD/i.test(s))return parseVCard(s);
+  if(/^MECARD:/i.test(s))return parseMeCard(s);
+  if(s.startsWith('{'))try{return fromObj(JSON.parse(s));}catch(e){}
+  if(s.startsWith('['))try{const a=JSON.parse(s);if(a[0])return fromObj(a[0]);}catch(e){}
+  if(/^https?:\/\//i.test(s)){
+    try{const u=new URL(s);const c=fromObj(Object.fromEntries(u.searchParams));if(c.nome||c.email||c.tel){c.notas=(c.notas?c.notas+'\n':'')+s;return c;}}catch(e){}
+    return base(s);
   }
-  // meCard
-  if (s.startsWith('MECARD:')) {
-    for (const f of s.slice(7).split(';')) {
-      const i = f.indexOf(':'); if (i<0) continue;
-      const k=f.slice(0,i), v=f.slice(i+1);
-      if (k==='N')     c.nome  = v.replace(',', ' ').trim();
-      if (k==='EMAIL') c.email = v;
-      if (k==='TEL')   c.tel   = v;
-      if (k==='ORG')   c.emp   = v;
-    }
-    return c;
+  const kv=parseKV(s);if(kv.nome||kv.email||kv.tel)return kv;
+  const lines=s.split(/[\n\r]+/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length>1)return smartAlloc(lines);
+  if(/^[\w.+\-]+@[\w.\-]+\.\w{2,}$/.test(s))return Object.assign(base(),'email',{email:s});
+  if(/^[+\d][\d\s\-().]{5,}$/.test(s))return Object.assign(base(),{tel:s});
+  return base(s);
+}
+function base(notas){return {nome:'',email:'',tel:'',emp:'',cargo:'',notas:notas||''};}
+function parseVCard(s){
+  const c=base();
+  for(const ln of s.split(/\r?\n/)){
+    const L=ln.trim();
+    if(/^FN[;:]/i.test(L))          {c.nome=L.replace(/^FN[^:]*:/i,'').replace(/\\n/g,' ').trim();}
+    else if(/^N[;:]/i.test(L)&&!c.nome){const p=L.replace(/^N[^:]*:/i,'').split(';');c.nome=[p[1],p[0]].filter(Boolean).join(' ').trim();}
+    else if(/^EMAIL[;:]/i.test(L))   {if(!c.email)c.email=L.replace(/^[^:]+:/,'').trim();}
+    else if(/^TEL[;:]/i.test(L))     {if(!c.tel)c.tel=L.replace(/^[^:]+:/,'').trim();}
+    else if(/^ORG[;:]/i.test(L))     {c.emp=L.replace(/^ORG[^:]*:/i,'').split(';')[0].trim();}
+    else if(/^TITLE[;:]/i.test(L))   {c.cargo=L.replace(/^TITLE[^:]*:/i,'').trim();}
+    else if(/^NOTE[;:]/i.test(L))    {c.notas+=(c.notas?'\n':'')+L.replace(/^NOTE[^:]*:/i,'').trim();}
   }
-  // JSON
-  try {
-    const j = JSON.parse(s);
-    return {
-      nome: j.name||j.nome||j.fullName||'',
-      email: j.email||'',
-      tel: j.phone||j.tel||j.telefone||'',
-      emp: j.company||j.empresa||j.org||'',
-      cargo: j.title||j.cargo||j.role||'',
-      notas: ''
-    };
-  } catch(e){}
-  // fallback
-  return { notas: 'Dados do QR:\n' + s };
+  return c;
+}
+function parseMeCard(s){
+  const c=base();
+  const body=s.replace(/^MECARD:/i,'').replace(/;+$/,'');
+  for(const f of body.split(';')){
+    const i=f.indexOf(':');if(i<0)continue;
+    const k=f.slice(0,i).toUpperCase().trim(),v=f.slice(i+1).trim();
+    if(k==='N')    c.nome=v.replace(',', ' ').trim();
+    if(k==='EMAIL'&&!c.email)c.email=v;
+    if(k==='TEL'&&!c.tel)c.tel=v;
+    if(k==='ORG')  c.emp=v;
+    if(k==='MEMO') c.notas=v;
+  }
+  return c;
+}
+function fromObj(o){
+  const g=(...ks)=>{for(const k of ks){const lk=k.toLowerCase();for(const [ok,ov] of Object.entries(o)){if(ok.toLowerCase()===lk&&ov)return String(ov);}}return '';};
+  return{nome:g('name','nome','fullName','full_name','displayName','contact'),email:g('email','mail','e-mail'),tel:g('phone','tel','telefone','mobile','cel','phone_number'),emp:g('company','empresa','org','organization','Organisation','firm'),cargo:g('title','cargo','role','position','job','function'),notas:g('notes','notas','note','description','memo','comment')};
+}
+function parseKV(s){
+  const c=base();let matched=false;
+  const NKS=['name','nome','fullname','full_name'],EKS=['email','mail'],TKS=['tel','phone','mobile','telefone','cel'],OKS=['org','company','empresa','organization'],CKS=['title','cargo','role','position'];
+  for(const m of s.matchAll(/([A-Za-z_\-]+)\s*[:=]\s*(.+)/g)){
+    const k=m[1].toLowerCase().trim(),v=m[2].trim();matched=true;
+    if(NKS.includes(k))c.nome=v;
+    else if(EKS.includes(k))c.email=v;
+    else if(TKS.includes(k))c.tel=v;
+    else if(OKS.includes(k))c.emp=v;
+    else if(CKS.includes(k))c.cargo=v;
+    else c.notas+=(c.notas?'\n':'')+m[1]+': '+v;
+  }
+  return matched?c:{};
+}
+function smartAlloc(lines){
+  const c=base();const unalloc=[];
+  for(const ln of lines){
+    if(!c.email&&/[\w.+\-]+@[\w.\-]+\.\w{2,}/.test(ln)){c.email=ln.match(/[\w.+\-]+@[\w.\-]+\.\w{2,}/)[0];continue;}
+    const digs=ln.replace(/\D/g,'');
+    if(!c.tel&&digs.length>=7&&digs.length<=15&&/^[+\d][\d\s\-().]{5,}$/.test(ln)){c.tel=ln;continue;}
+    if(/^https?:\/\//i.test(ln)){c.notas+=(c.notas?'\n':'')+ln;continue;}
+    if(!c.emp&&/\b(S\.?A\.?|Lda\.?|Ltd\.?|Inc\.?|Corp\.?|SL|GmbH|SARL|S\.L\.)\b/i.test(ln)){c.emp=ln;continue;}
+    unalloc.push(ln);
+  }
+  for(let i=0;i<unalloc.length;i++){
+    if(!c.nome&&/^[A-Za-zÀ-ÿ\s\-'.]{2,60}$/.test(unalloc[i])){c.nome=unalloc.splice(i,1)[0];break;}
+  }
+  if(!c.emp&&unalloc.length)c.emp=unalloc.shift();
+  if(unalloc.length)c.notas+=(c.notas?'\n':'')+unalloc.join('\n');
+  return c;
 }
 
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
+   PRODUCT SUGGESTIONS
+══════════════════════════════════════ */
+function onProdInput(){
+  const inp=document.getElementById('f-int'),val=inp.value;
+  const lastComma=val.lastIndexOf(',');
+  const cur=val.slice(lastComma+1).trim().toLowerCase();
+  const prods=D.cfg.products||[];
+  if(!prods.length){document.getElementById('sugg-drop').style.display='none';return;}
+  const used=val.split(',').map(s=>s.trim().toLowerCase());
+  const matches=prods.filter(p=>(!cur||p.toLowerCase().includes(cur))&&!used.includes(p.toLowerCase()));
+  const drop=document.getElementById('sugg-drop');
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML=(cur?'':'<div class="sugg-item sep">Sugestões</div>')+matches.map(p=>`<div class="sugg-item" onmousedown="addProd(event,'${p.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">📦 ${h(p)}</div>`).join('');
+  drop.style.display='block';
+}
+function addProd(e,p){
+  e.preventDefault();
+  const inp=document.getElementById('f-int'),val=inp.value;
+  const lc=val.lastIndexOf(',');
+  inp.value=(lc>=0?val.slice(0,lc+1)+' ':'')+p+', ';
+  document.getElementById('sugg-drop').style.display='none';
+  inp.focus();onProdInput();
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.prod-wrap'))document.getElementById('sugg-drop').style.display='none';});
+
+/* ══════════════════════════════════════
+   VOICE INPUT
+══════════════════════════════════════ */
+function toggleVoice(fid,btnId){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('🎤 Ditado não suportado neste browser');return;}
+  const btn=document.getElementById(btnId);
+  if(recog){recog.stop();recog=null;document.querySelectorAll('.mic-btn').forEach(b=>b.classList.remove('on'));return;}
+  recog=new SR();recog.lang='pt-PT';recog.continuous=true;recog.interimResults=false;
+  btn.classList.add('on');toast('🎤 A ouvir… (toca no microfone para parar)');
+  recog.onresult=(e)=>{
+    let txt='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)txt+=e.results[i][0].transcript+' ';
+    if(txt.trim()){const el=document.getElementById(fid);const sep=el.value&&!el.value.endsWith(' ')&&!el.value.endsWith(',')?' ':'';el.value+=sep+txt.trim();}
+  };
+  recog.onerror=(e)=>{recog=null;btn.classList.remove('on');if(e.error!=='aborted')toast('🎤 Erro: '+e.error);};
+  recog.onend=()=>{recog=null;btn.classList.remove('on');};
+  recog.start();
+}
+
+/* ══════════════════════════════════════
    FORM
-════════════════════════════════════ */
-function prepareNew(pre) {
-  editId = null;
-  document.getElementById('lead-form').reset();
-  const d7 = new Date(); d7.setDate(d7.getDate()+7);
-  document.getElementById('f-date').value = d7.toISOString().split('T')[0];
-  if (pre) {
-    if (pre.nome)  document.getElementById('f-nome').value  = pre.nome;
-    if (pre.email) document.getElementById('f-email').value = pre.email;
-    if (pre.tel)   document.getElementById('f-tel').value   = pre.tel;
-    if (pre.emp)   document.getElementById('f-emp').value   = pre.emp;
-    if (pre.cargo) document.getElementById('f-cargo').value = pre.cargo;
-    if (pre.notas) document.getElementById('f-notas').value = pre.notas;
+══════════════════════════════════════ */
+function prepareNew(pre){
+  editId=null;document.getElementById('lform').reset();document.getElementById('sugg-drop').style.display='none';
+  const d7=new Date();d7.setDate(d7.getDate()+7);document.getElementById('f-date').value=d7.toISOString().split('T')[0];
+  if(pre){
+    if(pre.nome)  document.getElementById('f-nome').value=pre.nome;
+    if(pre.email) document.getElementById('f-email').value=pre.email;
+    if(pre.tel)   document.getElementById('f-tel').value=pre.tel;
+    if(pre.emp)   document.getElementById('f-emp').value=pre.emp;
+    if(pre.cargo) document.getElementById('f-cargo').value=pre.cargo;
+    if(pre.notas) document.getElementById('f-notas').value=pre.notas;
   }
 }
-
-function loadEdit(id) {
-  const l = D.leads.find(x=>x.id===id); if (!l) return;
-  editId = id;
-  document.getElementById('f-nome').value  = l.nome   ||'';
-  document.getElementById('f-email').value = l.email  ||'';
-  document.getElementById('f-tel').value   = l.tel    ||'';
-  document.getElementById('f-emp').value   = l.empresa||'';
-  document.getElementById('f-cargo').value = l.cargo  ||'';
-  document.getElementById('f-int').value   = l.interesse||'';
-  document.getElementById('f-notas').value = l.notas  ||'';
-  document.getElementById('f-est').value   = l.estado ||'pendente';
-  document.getElementById('f-date').value  = l.date   ||'';
+function loadEdit(id){
+  const l=D.leads.find(x=>x.id===id);if(!l)return;editId=id;
+  document.getElementById('f-nome').value=l.nome||'';
+  document.getElementById('f-email').value=l.email||'';
+  document.getElementById('f-tel').value=l.tel||'';
+  document.getElementById('f-emp').value=l.empresa||'';
+  document.getElementById('f-cargo').value=l.cargo||'';
+  document.getElementById('f-int').value=l.interesse||'';
+  document.getElementById('f-notas').value=l.notas||'';
+  document.getElementById('f-est').value=l.estado||'pendente';
+  document.getElementById('f-date').value=l.date||'';
   showView('form');
 }
-
-function saveLead(e) {
+function saveLead(e){
   e.preventDefault();
-  const lead = {
-    id:       editId || uid(),
-    ts:       editId ? (D.leads.find(x=>x.id===editId)?.ts||new Date().toISOString()) : new Date().toISOString(),
-    upd:      new Date().toISOString(),
-    nome:     document.getElementById('f-nome').value.trim(),
-    email:    document.getElementById('f-email').value.trim(),
-    tel:      document.getElementById('f-tel').value.trim(),
-    empresa:  document.getElementById('f-emp').value.trim(),
-    cargo:    document.getElementById('f-cargo').value.trim(),
-    interesse:document.getElementById('f-int').value.trim(),
-    notas:    document.getElementById('f-notas').value.trim(),
-    estado:   document.getElementById('f-est').value,
-    date:     document.getElementById('f-date').value,
+  const intVal=document.getElementById('f-int').value.replace(/,\s*$/,'').trim();
+  const lead={
+    id:editId||uid(),
+    ts:editId?(D.leads.find(x=>x.id===editId)?.ts||new Date().toISOString()):new Date().toISOString(),
+    upd:new Date().toISOString(),
+    collector:D.user||'',
+    nome:document.getElementById('f-nome').value.trim(),
+    email:document.getElementById('f-email').value.trim(),
+    tel:document.getElementById('f-tel').value.trim(),
+    empresa:document.getElementById('f-emp').value.trim(),
+    cargo:document.getElementById('f-cargo').value.trim(),
+    interesse:intVal,
+    notas:document.getElementById('f-notas').value.trim(),
+    estado:document.getElementById('f-est').value,
+    date:document.getElementById('f-date').value,
   };
-  if (editId) {
-    const i = D.leads.findIndex(x=>x.id===editId);
-    if (i>=0) D.leads[i] = lead;
-  } else {
-    D.leads.push(lead);
-  }
-  save();
-  toast(editId ? 'Lead atualizado!' : '✅ Lead adicionado!');
-  editId = null;
-  showView('home');
+  if(editId){const i=D.leads.findIndex(x=>x.id===editId);if(i>=0)D.leads[i]=lead;}
+  else D.leads.push(lead);
+  save();toast(editId?'Lead atualizado!':'✅ Lead adicionado!');
+  editId=null;autoSync();showView('home');
 }
 
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
    DETAIL
-════════════════════════════════════ */
-function showDetail(id) {
-  const l = D.leads.find(x=>x.id===id); if (!l) return;
-  document.getElementById('detail-body').innerHTML = `
-    <div class="d-hero">
-      <div class="d-av">${h(l.nome[0]||'?').toUpperCase()}</div>
-      <div>
-        <div class="d-av-name">${h(l.nome)}</div>
-        ${(l.cargo||l.empresa)?`<div class="d-av-sub">${h([l.cargo,l.empresa].filter(Boolean).join(' · '))}</div>`:''}
-      </div>
-      <span class="badge b-${l.estado}" style="margin-left:auto;margin-top:0">${slbl(l.estado)}</span>
+══════════════════════════════════════ */
+function showDetail(id){
+  const l=D.leads.find(x=>x.id===id);if(!l)return;
+  document.getElementById('dbody').innerHTML=`
+    <div class="dhero">
+      <div class="dav">${h((l.nome||'?')[0]).toUpperCase()}</div>
+      <div style="flex:1"><div class="davn">${h(l.nome)}</div>${(l.cargo||l.empresa)?`<div class="davs">${h([l.cargo,l.empresa].filter(Boolean).join(' · '))}</div>`:''}</div>
+      <span class="badge ${bclass(l.estado)}" style="margin-top:0">${slbl(l.estado)}</span>
     </div>
-
     ${(l.email||l.tel)?`<div class="dcard">
       ${l.email?`<div class="drow"><span class="dic">✉️</span><div><div class="dlbl">Email</div><a class="dval" href="mailto:${h(l.email)}">${h(l.email)}</a></div></div>`:''}
       ${l.tel?`<div class="drow"><span class="dic">📞</span><div><div class="dlbl">Telefone</div><a class="dval" href="tel:${h(l.tel)}">${h(l.tel)}</a></div></div>`:''}
     </div>`:''}
-
     ${(l.empresa||l.cargo)?`<div class="dcard">
       ${l.empresa?`<div class="drow"><span class="dic">🏢</span><div><div class="dlbl">Empresa</div><div class="dval">${h(l.empresa)}</div></div></div>`:''}
       ${l.cargo?`<div class="drow"><span class="dic">💼</span><div><div class="dlbl">Cargo</div><div class="dval">${h(l.cargo)}</div></div></div>`:''}
     </div>`:''}
-
     ${l.interesse?`<div class="dcard"><div class="drow"><span class="dic">🎯</span><div><div class="dlbl">Interesse</div><div class="dval">${h(l.interesse)}</div></div></div></div>`:''}
-
     ${l.notas?`<div class="dcard"><div class="drow"><span class="dic">📝</span><div><div class="dlbl">Notas</div><div class="dval" style="white-space:pre-wrap">${h(l.notas)}</div></div></div></div>`:''}
-
     <div class="dcard">
-      <div class="drow"><span class="dic">📋</span><div><div class="dlbl">Estado Follow-up</div><div class="dval">${slbl(l.estado)}</div></div></div>
+      <div class="drow"><span class="dic">📋</span><div><div class="dlbl">Estado</div><div class="dval">${slbl(l.estado)}</div></div></div>
       ${l.date?`<div class="drow"><span class="dic">📅</span><div><div class="dlbl">Data Follow-up</div><div class="dval">${fdate(l.date)}</div></div></div>`:''}
+      ${l.collector?`<div class="drow"><span class="dic">👤</span><div><div class="dlbl">Recolhido por</div><div class="dval">${h(l.collector)}</div></div></div>`:''}
       <div class="drow"><span class="dic">🕐</span><div><div class="dlbl">Registado em</div><div class="dval">${fdt(l.ts)}</div></div></div>
     </div>
-
-    <div class="btns-row" style="margin-top:16px;margin-bottom:8px">
+    <div class="brow" style="margin-top:16px;margin-bottom:8px">
       <button class="btn btn-p" onclick="loadEdit('${l.id}')">✏️ Editar</button>
       <button class="btn btn-d" style="flex:0;width:52px;padding:14px 0" onclick="delLead('${l.id}')">🗑️</button>
     </div>`;
   showView('detail');
 }
+function delLead(id){if(!confirm('Apagar este lead?'))return;D.leads=D.leads.filter(x=>x.id!==id);save();autoSync();toast('Lead apagado!');showView('home');}
 
-function delLead(id) {
-  if (!confirm('Apagar este lead?')) return;
-  D.leads = D.leads.filter(x=>x.id!==id);
-  save(); toast('Lead apagado!'); showView('home');
+/* ══════════════════════════════════════
+   GITHUB GIST SYNC
+══════════════════════════════════════ */
+function dot(){return document.getElementById('sdot');}
+async function autoSync(){if(D.cfg.ghToken&&D.cfg.gistId){dot().className='sdot syncing';const ok=await pushLeads();dot().className='sdot'+(ok?'':' err');}}
+async function pushLeads(){
+  if(!D.cfg.ghToken||!D.cfg.gistId)return false;
+  const fname=`leads_${(D.user||'user').replace(/\s+/g,'_')}.json`;
+  try{
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{
+      method:'PATCH',
+      headers:{'Authorization':'token '+D.cfg.ghToken,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{
+        [fname]:{content:JSON.stringify(D.leads,null,2)},
+        'config.json':{content:JSON.stringify({fair:D.fair,products:D.cfg.products},null,2)}
+      }})
+    });
+    return r.ok;
+  }catch(e){return false;}
+}
+async function fetchConfig(){
+  if(!D.cfg.gistId)return;
+  try{
+    const hdrs=D.cfg.ghToken?{'Authorization':'token '+D.cfg.ghToken}:{};
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{headers:hdrs});
+    if(!r.ok)return;
+    const g=await r.json();
+    if(g.files?.['config.json']){
+      const cfg=JSON.parse(g.files['config.json'].content);
+      if(cfg.fair&&cfg.fair!==D.fair){D.fair=cfg.fair;document.getElementById('hdrt').textContent=cfg.fair;}
+      if(cfg.products)D.cfg.products=cfg.products;
+      save();
+    }
+    // import leads from same user file if any
+    const fname=`leads_${(D.user||'user').replace(/\s+/g,'_')}.json`;
+    if(g.files?.[fname]){
+      const remote=JSON.parse(g.files[fname].content);
+      const ids=new Set(D.leads.map(l=>l.id));
+      let added=0;for(const l of remote){if(!ids.has(l.id)){D.leads.push(l);added++;}}
+      if(added){save();renderLeads();toast(`${added} lead(s) importado(s) do GitHub`);}
+    }
+  }catch(e){}
+}
+async function testSync(){
+  if(!D.cfg.ghToken||!D.cfg.gistId){toast('Preenche o Token e o Gist ID primeiro');return;}
+  toast('A testar…');
+  const ok=await pushLeads();
+  toast(ok?'✅ Sync funcionou! Verifica o teu Gist.':'❌ Erro ao sincronizar. Verifica o token e o ID.');
 }
 
-/* ════════════════════════════════════
-   EXPORT
-════════════════════════════════════ */
-function exportCSV() {
-  if (!D.leads.length) { toast('Sem leads para exportar!'); return; }
-  const hdr = ['Nome','Email','Telefone','Empresa','Cargo','Interesse','Notas','Estado','Data Follow-up','Data Registo'];
-  const rows = D.leads.map(l=>[
-    l.nome,l.email,l.tel,l.empresa,l.cargo,l.interesse,
-    (l.notas||'').replace(/\n/g,' '),
-    slbl(l.estado),l.date||'',
-    l.ts?new Date(l.ts).toLocaleDateString('pt-PT'):''
-  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));
-  const csv = [hdr.join(','),...rows.map(r=>r.join(','))].join('\n');
-  const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = `leads_${D.fair.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
+/* ══════════════════════════════════════
+   EXPORT CSV
+══════════════════════════════════════ */
+function exportCSV(){
+  if(!D.leads.length){toast('Sem leads para exportar!');return;}
+  const hdr=['Nome','Email','Telefone','Empresa','Cargo','Interesse','Notas','Estado','Data Follow-up','Recolhido por','Data Registo'];
+  const rows=D.leads.map(l=>[l.nome,l.email,l.tel,l.empresa,l.cargo,l.interesse,(l.notas||'').replace(/\n/g,' '),slbl(l.estado),l.date||'',l.collector||'',l.ts?new Date(l.ts).toLocaleDateString('pt-PT'):''].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));
+  const csv=[hdr.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`leads_${D.fair.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   toast(`${D.leads.length} leads exportados ✅`);
 }
 
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
    SETTINGS
-════════════════════════════════════ */
-function openSettings() {
-  document.getElementById('si-fair').value = D.fair;
-  document.getElementById('modal-set').classList.add('open');
+══════════════════════════════════════ */
+function openSettings(){
+  document.getElementById('si-user').value=D.user||'';
+  document.getElementById('si-fair').value=D.fair||'';
+  document.getElementById('si-prods').value=(D.cfg.products||[]).join('\n');
+  document.getElementById('si-pin').value='';document.getElementById('si-pin2').value='';
+  document.getElementById('si-token').value=D.cfg.ghToken||'';
+  document.getElementById('si-gist').value=D.cfg.gistId||'';
+  openMov('m-set');
 }
-function closeModal(e, id) {
-  if (e.target === document.getElementById(id))
-    document.getElementById(id).classList.remove('open');
+function saveSettings(){
+  const np=document.getElementById('si-pin').value.trim();
+  const np2=document.getElementById('si-pin2').value.trim();
+  if(np){
+    if(np!==np2){toast('Os PINs não coincidem!');return;}
+    if(!/^\d{4}$/.test(np)){toast('PIN deve ter exactamente 4 dígitos!');return;}
+    D.cfg.pin=np==='0000'?'':hashPin(np); // 0000 = remover PIN
+  }
+  D.user=document.getElementById('si-user').value.trim();
+  D.fair=document.getElementById('si-fair').value.trim()||'Feira';
+  D.cfg.products=document.getElementById('si-prods').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  D.cfg.ghToken=document.getElementById('si-token').value.trim();
+  D.cfg.gistId=document.getElementById('si-gist').value.trim();
+  save();document.getElementById('hdrt').textContent=D.fair;
+  closeMov(null,'m-set',true);toast('Definições guardadas!');
+  if(D.cfg.ghToken&&D.cfg.gistId)pushLeads().then(ok=>{if(ok)toast('Config enviada para GitHub ✅');});
 }
-function saveFair() {
-  const v = document.getElementById('si-fair').value.trim();
-  if (v) { D.fair = v; save(); document.getElementById('hdr-title').textContent = v; toast('Nome da feira atualizado!'); }
-  document.getElementById('modal-set').classList.remove('open');
-}
-function clearAll() {
-  if (!confirm(`Apagar todos os ${D.leads.length} leads?`)) return;
-  D.leads = []; save();
-  document.getElementById('modal-set').classList.remove('open');
-  toast('Todos os leads apagados!');
-  renderLeads();
+function clearAll(){
+  if(!confirm(`Apagar todos os ${D.leads.length} leads locais?`))return;
+  D.leads=[];save();closeMov(null,'m-set',true);toast('Leads apagados!');renderLeads();
 }
 
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
+   MODAL UTILS
+══════════════════════════════════════ */
+function openMov(id){document.getElementById(id).classList.add('on');}
+function closeMov(e,id,force){if(force||!e||e.target===document.getElementById(id))document.getElementById(id).classList.remove('on');}
+
+/* ══════════════════════════════════════
    UTILS
-════════════════════════════════════ */
-function h(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function slbl(e) {
-  return {pendente:'⏳ Pendente',contactado:'📞 Contactado',qualificado:'✅ Qualificado',descartado:'❌ Descartado'}[e]||e;
-}
-function fdate(s) {
-  try { return new Date(s+'T00:00:00').toLocaleDateString('pt-PT',{day:'2-digit',month:'short',year:'numeric'}); }
-  catch(e){return s;}
-}
-function fdt(s) {
-  try { return new Date(s).toLocaleString('pt-PT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
-  catch(e){return s;}
-}
-let tt;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(tt); tt = setTimeout(()=>el.classList.remove('show'), 2600);
-}
+══════════════════════════════════════ */
+function h(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function bclass(e){return{pendente:'bp',contactado:'bcc',qualificado:'bq',descartado:'bd'}[e]||'bp';}
+function slbl(e){return{pendente:'⏳ Pendente',contactado:'📞 Contactado',qualificado:'✅ Qualificado',descartado:'❌ Descartado'}[e]||e;}
+function fdate(s){try{return new Date(s+'T00:00:00').toLocaleDateString('pt-PT',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return s;}}
+function fdt(s){try{return new Date(s).toLocaleString('pt-PT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
+let tt;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2800);}
 
-/* ════════════════════════════════════
+/* ══════════════════════════════════════
    INIT
-════════════════════════════════════ */
+══════════════════════════════════════ */
 load();
-document.getElementById('hdr-title').textContent = D.fair;
+document.getElementById('hdrt').textContent=D.fair;
+document.getElementById('sdot').style.display=D.cfg.gistId?'block':'none';
 renderLeads();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+fetchConfig(); // busca config/nome da feira do GitHub ao arrancar
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
