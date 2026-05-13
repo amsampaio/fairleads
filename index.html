@@ -936,7 +936,7 @@ function buildZones(assignments){
   const avgH=detected.length
     ? detected.reduce((s,l)=>s+(l.bbox.y1-l.bbox.y0),0)/detected.length
     : ocrNH*0.08;
-  const zoneH=Math.max(avgH*1.15, ocrNH*0.05);
+  const zoneH=Math.max(avgH*1.0, ocrNH*0.03);
   const pad=ocrNW*0.02;
 
   ocrLines=[];
