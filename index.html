@@ -873,20 +873,96 @@ function delLead(id){if(!confirm('Apagar este lead?'))return;D.leads=D.leads.fil
 const FCOL={nome:'#1D4ED8',emp:'#7C3AED',cargo:'#0891B2',email:'#059669',tel:'#D97706',notas:'#64748B'};
 const FLBL={nome:'👤 Nome',emp:'🏢 Empresa',cargo:'💼 Cargo',email:'✉️ Email',tel:'📞 Telefone',notas:'📝 Notas'};
 
-// Posições default como fracção da imagem (y, height)
-// Distribuídas igualmente; notas mais baixa e mais pequena (2 linhas)
-const ZONE_DEFS=[
-  {field:'nome',   y:0.03, h:0.13},
-  {field:'emp',    y:0.20, h:0.13},
-  {field:'cargo',  y:0.37, h:0.11},
-  {field:'email',  y:0.52, h:0.11},
-  {field:'tel',    y:0.67, h:0.11},
-  {field:'notas',  y:0.82, h:0.13}, // ~2 linhas de texto
-];
-
+const OCR_FIELDS=['nome','emp','cargo','email','tel','notas'];
 let ocrLines=[], ocrWords=[], ocrNW=0, ocrNH=0;
 
 function g(id){return document.getElementById(id);}
+
+/* ── Auto-assign Tesseract lines to contact-card fields ── */
+function autoAssignFields(lines){
+  const r={nome:null,emp:null,cargo:null,email:null,tel:null,notas:null};
+  const used=new Set();
+
+  // Email — strongest signal: contains @
+  for(let i=0;i<lines.length;i++){
+    if(/@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(lines[i].text)&&!used.has(i)){
+      r.email=lines[i]; used.add(i); break;
+    }
+  }
+  // Phone — mostly digits/separators, ≥7 digits
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    const t=lines[i].text.trim();
+    const digits=t.replace(/\D/g,'');
+    if(digits.length>=7&&t.replace(/[\d\s\+\-\(\)\.\/]/g,'').length<=2){
+      r.tel=lines[i]; used.add(i); break;
+    }
+  }
+  // Name — largest font (tallest bbox) among remaining
+  let maxH=0,nameIdx=-1;
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    const h=lines[i].bbox.y1-lines[i].bbox.y0;
+    if(h>maxH){maxH=h;nameIdx=i;}
+  }
+  if(nameIdx>=0){r.nome=lines[nameIdx];used.add(nameIdx);}
+  // Company — legal suffix or ALL-CAPS
+  const coRE=/\b(lda|s\.?a\.?|ltd|inc|llc|gmbh|s\.?l\.?|srl|bv|nv|plc|corp|group|solutions?|services?|tecnologia|sistemas?|systems?|consulting|consultora|consultoria)\b/i;
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    const t=lines[i].text.trim();
+    if(coRE.test(t)||(t.length>3&&t===t.toUpperCase())){r.emp=lines[i];used.add(i);break;}
+  }
+  // Cargo — job title keywords
+  const cargoRE=/\b(ceo|cto|cfo|coo|cmo|diretor[a]?|director[a]?|gerente|manager|gestor[a]?|engenheiro|engenheira|engineer|developer|desenvolvedor[a]?|analyst|analista|consultor[a]?|comercial|marketing|operations|product|president|vice|vp\b|head|lead|coordenador[a]?|supervisor[a]?|responsável|técnico|técnica|administrador[a]?|sócio|socio|fundador[a]?|founder|partner|parceiro)\b/i;
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    if(cargoRE.test(lines[i].text)){r.cargo=lines[i];used.add(i);break;}
+  }
+  // Remaining lines → fill emp, cargo, notas in order
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    if(!r.emp){r.emp=lines[i];used.add(i);continue;}
+    if(!r.cargo){r.cargo=lines[i];used.add(i);continue;}
+    if(!r.notas){r.notas=lines[i];used.add(i);break;}
+  }
+  return r;
+}
+
+/* ── Build ocrLines from auto-assignment ── */
+function buildZones(assignments){
+  // Zone height = avg detected line height × 1.5 (adds visual padding)
+  const detected=Object.values(assignments).filter(Boolean);
+  const avgH=detected.length
+    ? detected.reduce((s,l)=>s+(l.bbox.y1-l.bbox.y0),0)/detected.length
+    : ocrNH*0.08;
+  const zoneH=Math.max(avgH*1.5, ocrNH*0.07);
+  const pad=ocrNW*0.02;
+
+  ocrLines=[];
+  const missing=[];
+
+  for(const field of OCR_FIELDS){
+    const line=assignments[field];
+    if(line){
+      const cy=(line.bbox.y0+line.bbox.y1)/2;
+      ocrLines.push({id:uid(),field,
+        bbox:{x0:pad, y0:cy-zoneH/2, x1:ocrNW-pad, y1:cy+zoneH/2}});
+    } else {
+      missing.push(field);
+    }
+  }
+
+  // Stack missing fields below the last detected zone
+  const maxY1=ocrLines.reduce((m,z)=>Math.max(m,z.bbox.y1), ocrNH*0.55);
+  const gap=zoneH*0.18;
+  let stackY=maxY1+gap;
+  for(const field of missing){
+    ocrLines.push({id:uid(),field,
+      bbox:{x0:pad, y0:stackY, x1:ocrNW-pad, y1:stackY+zoneH}});
+    stackY+=zoneH+gap;
+  }
+}
 
 async function doOCR(input){
   const file=input.files[0]; if(!file)return;
@@ -901,6 +977,11 @@ async function doOCR(input){
   g('ocr-msg').textContent='⏳ A ler cartão…';
   g('ocr-msg').className='scan-msg';
 
+  // Ensure image dimensions are available
+  await new Promise(r=>{ if(imgEl.complete&&imgEl.naturalWidth)r(); else imgEl.onload=r; });
+  ocrNW=imgEl.naturalWidth||800; ocrNH=imgEl.naturalHeight||600;
+
+  let rawLines=[], assignments={};
   try{
     const res=await Tesseract.recognize(file,'por+eng',{
       logger:m=>{
@@ -913,35 +994,26 @@ async function doOCR(input){
       }
     });
     URL.revokeObjectURL(url);
-    await new Promise(r=>{if(imgEl.complete)r(); else imgEl.onload=r;});
-    ocrNW=imgEl.naturalWidth; ocrNH=imgEl.naturalHeight;
     ocrWords=(res.data.words||[]).filter(w=>w.text.trim()&&w.confidence>20);
-
-    // Criar zonas fixas com posições default
-    ocrLines=ZONE_DEFS.map(def=>({
-      id:uid(), field:def.field,
-      bbox:{x0:ocrNW*0.03, y0:ocrNH*def.y, x1:ocrNW*0.97, y1:ocrNH*(def.y+def.h)}
-    }));
-
-    g('ocp-proc').style.display='none';
-    g('ocp-review').style.display='block';
-    renderZones();
+    rawLines=(res.data.lines||[]).filter(l=>l.text.trim()&&l.confidence>15);
+    assignments=autoAssignFields(rawLines);
+    const found=Object.values(assignments).filter(Boolean).length;
+    g('ocr-msg').textContent=found
+      ? `✅ ${found} campo(s) detetado(s) — revê e ajusta se necessário`
+      : '⚠️ Nada reconhecido — posiciona os retângulos manualmente';
+    g('ocr-msg').className='scan-msg'+(found?'':' scan-err');
   }catch(e){
     URL.revokeObjectURL(url);
-    // Even if OCR fails, show the zone editor so the user can still position zones manually
-    await new Promise(r=>{if(imgEl.complete)r(); else imgEl.onload=r;});
-    ocrNW=imgEl.naturalWidth||800; ocrNH=imgEl.naturalHeight||600;
     ocrWords=[];
-    ocrLines=ZONE_DEFS.map(def=>({
-      id:uid(), field:def.field,
-      bbox:{x0:ocrNW*0.03, y0:ocrNH*def.y, x1:ocrNW*0.97, y1:ocrNH*(def.y+def.h)}
-    }));
-    g('ocp-proc').style.display='none';
+    assignments={};
     g('ocr-msg').textContent='⚠️ OCR sem resultados — posiciona os retângulos manualmente';
     g('ocr-msg').className='scan-msg scan-err';
-    g('ocp-review').style.display='block';
-    renderZones();
   }
+
+  buildZones(assignments);
+  g('ocp-proc').style.display='none';
+  g('ocp-review').style.display='block';
+  renderZones();
 }
 
 function renderZones(){
