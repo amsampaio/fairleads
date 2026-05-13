@@ -285,6 +285,29 @@ a.dval{color:var(--p);text-decoration:none;}
     <div id="dbody"></div>
   </div>
 
+  <!-- OCR — cartão de contacto -->
+  <div class="view" id="v-ocr">
+    <div class="scanwrap">
+      <div id="ocr-prev" style="width:100%;max-width:380px;border-radius:18px;overflow:hidden;display:none;">
+        <img id="ocr-img" style="width:100%;display:block;border-radius:18px;">
+      </div>
+      <div class="scan-msg" id="ocr-msg">📸 Fotografa o cartão de contacto</div>
+      <div id="ocr-progress" style="width:100%;max-width:380px;background:var(--br);border-radius:8px;height:8px;display:none;">
+        <div id="ocr-bar" style="height:100%;background:var(--p);border-radius:8px;width:0%;transition:width .4s;"></div>
+      </div>
+      <input type="file" id="ocr-file" accept="image/*" capture="environment" style="display:none" onchange="doOCR(this)">
+      <button type="button" class="btn btn-p" style="max-width:320px" onclick="document.getElementById('ocr-file').click()">
+        📸 Fotografar Cartão
+      </button>
+      <button type="button" class="btn btn-o" style="max-width:320px" onclick="document.getElementById('ocr-file').removeAttribute('capture');document.getElementById('ocr-file').click()" title="Escolher da galeria">
+        🖼️ Escolher da Galeria
+      </button>
+      <button type="button" class="btn btn-o" style="max-width:320px" onclick="prepareNew();showView('form')">
+        ✏️ Adicionar manualmente
+      </button>
+    </div>
+  </div>
+
 </div>
 
 <!-- BOTTOM NAV -->
@@ -308,6 +331,14 @@ a.dval{color:var(--p);text-decoration:none;}
   <button class="ni" id="n-export" onclick="exportCSV()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span>Exportar</span>
+  </button>
+  <button class="ni" id="n-ocr" onclick="showView('ocr')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="6" width="20" height="13" rx="2"/>
+      <line x1="6" y1="11" x2="15" y2="11"/><line x1="6" y1="14.5" x2="11" y2="14.5"/>
+      <circle cx="19" cy="11" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+    <span>Cartão</span>
   </button>
 </nav>
 
@@ -392,6 +423,7 @@ a.dval{color:var(--p);text-decoration:none;}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 /* ══════════════════════════════════════
    DATA
@@ -442,12 +474,31 @@ function showView(v){
   document.getElementById('v-'+v).classList.add('on');
   const ni=document.getElementById('n-'+v);if(ni)ni.classList.add('on');
   const bk=document.getElementById('hbk'),hs=document.getElementById('hset'),tt=document.getElementById('hdrt'),sd=document.getElementById('sdot');
-  if(v==='form'){bk.style.display='flex';hs.style.display='none';sd.style.display='none';tt.textContent=editId?'Editar Lead':'Novo Lead';}
-  else if(v==='detail'){bk.style.display='flex';hs.style.display='none';sd.style.display='none';tt.textContent='Detalhes';}
-  else{bk.style.display='none';hs.style.display='flex';sd.style.display=D.cfg.gistId?'block':'none';tt.textContent=v==='scan'?'Scan QR Code':D.fair;}
+  const bnav=document.querySelector('.bnav'),main=document.querySelector('.main');
+  if(v==='form'||v==='detail'){
+    // Esconder barra de navegação no formulário e nos detalhes
+    bk.style.display='flex';hs.style.display='none';sd.style.display='none';
+    tt.textContent=v==='form'?(editId?'Editar Lead':'Novo Lead'):'Detalhes';
+    bnav.style.display='none';
+    main.style.paddingBottom='12px';
+  } else {
+    bk.style.display='none';hs.style.display='flex';sd.style.display=D.cfg.gistId?'block':'none';
+    tt.textContent=v==='scan'?'Scan QR Code':v==='ocr'?'Scan Cartão':D.fair;
+    bnav.style.display='flex';
+    main.style.paddingBottom='';
+  }
   curV=v;
   if(v==='home')renderLeads();
   if(v==='scan'){document.getElementById('scan-msg').textContent='A iniciar câmara…';document.getElementById('scan-msg').className='scan-msg';if(!scanning)setTimeout(startScan,250);}
+  if(v==='ocr'){
+    document.getElementById('ocr-msg').textContent='📸 Fotografa o cartão de contacto';
+    document.getElementById('ocr-msg').className='scan-msg';
+    document.getElementById('ocr-prev').style.display='none';
+    document.getElementById('ocr-progress').style.display='none';
+    document.getElementById('ocr-bar').style.width='0%';
+    document.getElementById('ocr-file').value='';
+    document.getElementById('ocr-file').setAttribute('capture','environment');
+  }
 }
 function goBack(){editId=null;showView('home');}
 
@@ -739,6 +790,71 @@ function showDetail(id){
   showView('detail');
 }
 function delLead(id){if(!confirm('Apagar este lead?'))return;D.leads=D.leads.filter(x=>x.id!==id);save();autoSync();toast('Lead apagado!');showView('home');}
+
+/* ══════════════════════════════════════
+   OCR — CARTÃO DE CONTACTO
+══════════════════════════════════════ */
+async function doOCR(input){
+  const file=input.files[0];if(!file)return;
+  const msg=document.getElementById('ocr-msg');
+  const prog=document.getElementById('ocr-progress');
+  const bar=document.getElementById('ocr-bar');
+  const prev=document.getElementById('ocr-prev');
+  const img=document.getElementById('ocr-img');
+
+  // Mostrar preview da imagem
+  const url=URL.createObjectURL(file);
+  img.src=url;prev.style.display='block';
+
+  msg.textContent='⏳ A iniciar reconhecimento de texto…';
+  msg.className='scan-msg';
+  prog.style.display='block';bar.style.width='5%';
+
+  try{
+    const result=await Tesseract.recognize(file,'por+eng',{
+      logger:m=>{
+        if(m.status==='recognizing text'){
+          const pct=Math.round(m.progress*100);
+          bar.style.width=pct+'%';
+          msg.textContent='🔍 A ler texto… '+pct+'%';
+        } else if(m.status==='loading tesseract core'||m.status==='initializing tesseract'){
+          msg.textContent='⏳ A carregar motor OCR…';bar.style.width='15%';
+        } else if(m.status==='loading language traineddata'||m.status==='initializing api'){
+          msg.textContent='⏳ A carregar idioma…';bar.style.width='30%';
+        }
+      }
+    });
+
+    URL.revokeObjectURL(url);
+    prog.style.display='none';
+
+    const raw=result.data.text||'';
+    const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>1);
+
+    if(!lines.length){
+      msg.textContent='⚠️ Texto não detetado. Tenta com mais luz e foco na câmara.';
+      msg.className='scan-msg scan-err';
+      input.value='';return;
+    }
+
+    const contact=smartAlloc(lines);
+    // Se não extraiu campos úteis, coloca tudo nas notas
+    if(!contact.nome&&!contact.email&&!contact.tel){
+      contact.notas=lines.join('\n');
+    }
+
+    msg.textContent='✅ Texto lido! A abrir formulário…';
+    toast('Cartão lido com sucesso!');
+    setTimeout(()=>{prepareNew(contact);showView('form');},700);
+
+  }catch(e){
+    URL.revokeObjectURL(url);
+    prog.style.display='none';
+    msg.textContent='❌ Erro OCR: '+(e.message||e);
+    msg.className='scan-msg scan-err';
+  }
+  input.value='';
+}
 
 /* ══════════════════════════════════════
    GITHUB GIST SYNC
