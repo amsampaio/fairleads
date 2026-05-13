@@ -784,10 +784,22 @@ async function fetchConfig(){
   }catch(e){}
 }
 async function testSync(){
-  if(!D.cfg.ghToken||!D.cfg.gistId){toast('Preenche o Token e o Gist ID primeiro');return;}
+  // Read directly from the form fields (may not be saved yet)
+  const token = document.getElementById('si-token').value.trim();
+  const gistId = document.getElementById('si-gist').value.trim();
+  if(!token || !gistId){toast('Preenche o Token e o Gist ID primeiro');return;}
   toast('A testar…');
-  const ok=await pushLeads();
-  toast(ok?'✅ Sync funcionou! Verifica o teu Gist.':'❌ Erro ao sincronizar. Verifica o token e o ID.');
+  try{
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: {'Authorization': 'token '+token, 'Content-Type': 'application/json'},
+      body: JSON.stringify({files:{'config.json':{content:JSON.stringify({fair:D.fair,products:D.cfg.products},null,2)}}})
+    });
+    if(r.ok){toast('✅ Sync funcionou! Verifica o teu Gist.');}
+    else if(r.status===401){toast('❌ Token inválido ou sem permissão "gist"');}
+    else if(r.status===404){toast('❌ Gist ID não encontrado. Confirma o ID.');}
+    else{toast('❌ Erro '+r.status+'. Verifica os dados.');}
+  }catch(e){toast('❌ Sem ligação à internet');}
 }
 
 /* ══════════════════════════════════════
