@@ -377,7 +377,7 @@ a.dval{color:var(--p);text-decoration:none;}
       <label class="fl"><span>Gist ID</span></label>
       <input class="fi" type="text" id="si-gist" placeholder="abc123def456…" autocomplete="off">
     </div>
-    <button class="btn btn-o" style="margin-bottom:10px" onclick="testSync()">🔁 Testar Sincronização</button>
+    <button type="button" class="btn btn-o" id="btn-test-sync" style="margin-bottom:10px" onclick="testSync(this)">🔁 Testar Sincronização</button>
 
     <button class="btn btn-p" onclick="saveSettings()">💾 Guardar Definições</button>
 
@@ -783,23 +783,42 @@ async function fetchConfig(){
     }
   }catch(e){}
 }
-async function testSync(){
-  // Read directly from the form fields (may not be saved yet)
-  const token = document.getElementById('si-token').value.trim();
-  const gistId = document.getElementById('si-gist').value.trim();
-  if(!token || !gistId){toast('Preenche o Token e o Gist ID primeiro');return;}
-  toast('A testar…');
+async function testSync(btn){
+  const token  = (document.getElementById('si-token').value  || '').trim();
+  const gistId = (document.getElementById('si-gist').value   || '').trim();
+
+  if(!token || !gistId){
+    alert('Preenche o Token e o Gist ID antes de testar.');
+    return;
+  }
+
+  // Visual feedback on the button itself
+  const orig = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = '⏳ A testar…'; btn.disabled = true; }
+
+  let msg = '';
   try{
-    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+    const r = await fetch('https://api.github.com/gists/' + gistId, {
       method: 'PATCH',
-      headers: {'Authorization': 'token '+token, 'Content-Type': 'application/json'},
-      body: JSON.stringify({files:{'config.json':{content:JSON.stringify({fair:D.fair,products:D.cfg.products},null,2)}}})
+      headers: {
+        'Authorization': 'token ' + token,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({
+        files: { 'config.json': { content: JSON.stringify({fair: D.fair, products: D.cfg.products}, null, 2) } }
+      })
     });
-    if(r.ok){toast('✅ Sync funcionou! Verifica o teu Gist.');}
-    else if(r.status===401){toast('❌ Token inválido ou sem permissão "gist"');}
-    else if(r.status===404){toast('❌ Gist ID não encontrado. Confirma o ID.');}
-    else{toast('❌ Erro '+r.status+'. Verifica os dados.');}
-  }catch(e){toast('❌ Sem ligação à internet');}
+    if     (r.ok)          msg = '✅ Funcionou! Verifica o teu Gist.';
+    else if(r.status===401) msg = '❌ Token inválido ou sem permissão "gist".';
+    else if(r.status===404) msg = '❌ Gist ID não encontrado. Confirma o ID.';
+    else if(r.status===422) msg = '❌ Gist ID inválido (erro 422).';
+    else                    msg = '❌ Erro HTTP ' + r.status + '.';
+  } catch(e) {
+    msg = '❌ Erro de rede: ' + e.message;
+  }
+
+  if(btn){ btn.textContent = orig; btn.disabled = false; }
+  alert(msg); // alert is always visible, unlike toast
 }
 
 /* ══════════════════════════════════════
