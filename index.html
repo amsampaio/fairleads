@@ -11,6 +11,7 @@
 <title>FairLeads</title>
 <link rel="manifest" href="manifest.json">
 <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
+<!-- v8 -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{--p:#1D4ED8;--pl:#3B82F6;--pd:#1E3A8A;--bg:#F1F5F9;--t:#1E293B;--tm:#64748B;--br:#E2E8F0;--err:#EF4444;--ok:#10B981;--nh:64px;--hh:56px;}
@@ -587,19 +588,20 @@ function showView(v){
   const bk=document.getElementById('hbk'),hs=document.getElementById('hset'),tt=document.getElementById('hdrt'),sd=document.getElementById('sdot');
   const bnav=document.querySelector('.bnav'),main=document.querySelector('.main');
   if(v==='form'||v==='detail'){
-    // Esconder barra de navegação no formulário e nos detalhes
     bk.style.display='flex';hs.style.display='none';sd.style.display='none';
     tt.textContent=v==='form'?(editId?'Editar Lead':'Novo Lead'):'Detalhes';
     bnav.style.display='none';
     main.style.paddingBottom='12px';
   } else {
     bk.style.display='none';hs.style.display='flex';sd.style.display=D.cfg.gistId?'block':'none';
-    tt.textContent=v==='scan'?'Scan QR Code':v==='ocr'?'Scan Cartão':D.fair;
+    if(v==='scan') tt.textContent='Scan QR Code';
+    else if(v==='ocr') tt.textContent='Scan Cartão';
+    else updateTitle();
     bnav.style.display='flex';
     main.style.paddingBottom='';
   }
   curV=v;
-  if(v==='home')renderLeads();
+  if(v==='home') requestAnimationFrame(renderLeads);
   if(v==='scan'){document.getElementById('scan-msg').textContent='A iniciar câmara…';document.getElementById('scan-msg').className='scan-msg';if(!scanning)setTimeout(startScan,250);}
   if(v==='ocr'){
     // Reset to capture phase when entering OCR view
@@ -635,7 +637,12 @@ function renderLeads(){
     return fok&&sok;
   }).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   const el=document.getElementById('llist');
-  if(!list.length){const al=activeLeads().length;el.innerHTML=`<div class="empty"><div class="ei">👤</div><h3>${al?'Sem resultados':'Sem leads ainda'}</h3><p>${al?'Ajusta os filtros ou a pesquisa.':'Usa o scanner QR ou adiciona o primeiro contacto manualmente.'}</p></div>`;return;}
+  if(!list.length){
+    const al=activeLeads().length;
+    const noGist=!D.cfg.gistId&&!al;
+    el.innerHTML=`<div class="empty"><div class="ei">👤</div><h3>${al?'Sem resultados':'Sem leads ainda'}</h3><p>${al?'Ajusta os filtros ou a pesquisa.':noGist?'Configura o <strong>GitHub Gist</strong> nas ⚙️ Definições para sincronizar leads entre dispositivos. Depois usa o scanner QR ou adiciona manualmente.':'Usa o scanner QR ou adiciona o primeiro contacto manualmente.'}</p></div>`;
+    return;
+  }
   el.innerHTML=list.map(l=>`<div class="lcard" onclick="showDetail('${l.id}')">
     <div class="lct"><div>
       <div class="lcn">${h(l.nome)}</div>
@@ -1417,8 +1424,12 @@ function saveSettings(){
   D.cfg.ghToken=document.getElementById('si-token').value.trim();
   D.cfg.gistId=document.getElementById('si-gist').value.trim();
   save();updateTitle();
+  document.getElementById('sdot').style.display=D.cfg.gistId?'block':'none';
   closeMov(null,'m-set',true);toast('Definições guardadas!');
-  if(D.cfg.ghToken&&D.cfg.gistId)pushLeads().then(ok=>{if(ok)toast('Config enviada para GitHub ✅');});
+  if(D.cfg.ghToken&&D.cfg.gistId){
+    // Push config + pull leads (útil na primeira configuração numa PWA nova)
+    fetchConfig().then(()=>pushLeads());
+  }
 }
 function clearAll(){
   if(!confirm(`Apagar todos os ${D.leads.length} leads locais?`))return;
@@ -1456,7 +1467,7 @@ document.addEventListener('pointerdown',e=>{
     popup.style.display='none'; _activeZone=null;
   }
 },true);
-fetchConfig(); // busca config/nome da feira do GitHub ao arrancar
+fetchConfig(); // ao arrancar: sincroniza config e importa leads do Gist se configurado
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
