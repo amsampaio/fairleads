@@ -11,6 +11,12 @@
   "lang": "pt",
   "icons": [
     {
+      "src": "icon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any"
+    },
+    {
       "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",

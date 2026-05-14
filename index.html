@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="FairLeads">
 <title>FairLeads</title>
 <link rel="manifest" href="manifest.json">
+<link rel="shortcut icon" href="icon.ico" type="image/x-icon">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{--p:#1D4ED8;--pl:#3B82F6;--pd:#1E3A8A;--bg:#F1F5F9;--t:#1E293B;--tm:#64748B;--br:#E2E8F0;--err:#EF4444;--ok:#10B981;--nh:64px;--hh:56px;}
@@ -172,6 +173,7 @@ a.dval{color:var(--p);text-decoration:none;}
   <button class="hbtn" id="hbk" style="display:none" onclick="goBack()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><polyline points="15,18 9,12 15,6"/></svg>
   </button>
+  <img src="icon.ico" alt="" style="width:30px;height:30px;border-radius:7px;flex-shrink:0;object-fit:cover;">
   <span class="hdr-t" id="hdrt">FairLeads</span>
   <div id="sdot" class="sdot" style="display:none" title="GitHub sync"></div>
   <button class="hbtn" id="hset" onclick="settingsClick()">
@@ -490,6 +492,12 @@ a.dval{color:var(--p);text-decoration:none;}
     <button class="btn btn-p" onclick="saveSettings()">💾 Guardar Definições</button>
 
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--br)">
+      <p style="font-size:12px;color:var(--tm);margin-bottom:6px">👑 Administrador</p>
+      <p style="font-size:11px;color:var(--tm);margin-bottom:10px;line-height:1.5">Carrega todos os leads de todos os collectors do Gist. Ao fechar e reabrir a app volta a ver apenas os teus leads.</p>
+      <button class="btn btn-o" onclick="loadAllLeads(this)" id="btn-load-all">📥 Ver todos os leads da feira</button>
+    </div>
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">
       <p style="font-size:12px;color:var(--tm);margin-bottom:10px">📤 Exportar dados</p>
       <button class="btn btn-o" onclick="exportCSV()">⬇️ Exportar Leads (CSV)</button>
     </div>
@@ -512,6 +520,7 @@ a.dval{color:var(--p);text-decoration:none;}
 ══════════════════════════════════════ */
 const KEY = 'fl_v2';
 let D = { fair:'Feira', user:'', cfg:{pin:'',ghToken:'',gistId:'',products:[]}, leads:[] };
+let adminMode=false, adminLeads=[];  // resets on page reload — never persisted
 let curV='home', editId=null, flt='all';
 let scanning=false, stream=null, raf=null;
 let recog=null;
@@ -607,16 +616,26 @@ function goBack(){editId=null;showView('home');}
 /* ══════════════════════════════════════
    HOME
 ══════════════════════════════════════ */
+function activeLeads(){return adminMode?adminLeads:D.leads;}
+function updateTitle(){
+  const el=document.getElementById('hdrt');
+  if(adminMode){
+    el.innerHTML=`${D.fair} <span style="font-size:11px;background:rgba(255,255,255,.25);padding:2px 8px;border-radius:10px;vertical-align:middle">👑 Admin</span>`;
+  } else {
+    el.textContent=D.fair;
+  }
+}
+
 function renderLeads(){
   renderStats();
   const q=(document.getElementById('search').value||'').toLowerCase();
-  let list=D.leads.filter(l=>{
+  let list=activeLeads().filter(l=>{
     const fok=flt==='all'||l.estado===flt;
     const sok=!q||['nome','email','empresa','interesse','cargo','collector'].some(k=>(l[k]||'').toLowerCase().includes(q));
     return fok&&sok;
   }).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   const el=document.getElementById('llist');
-  if(!list.length){el.innerHTML=`<div class="empty"><div class="ei">👤</div><h3>${D.leads.length?'Sem resultados':'Sem leads ainda'}</h3><p>${D.leads.length?'Ajusta os filtros ou a pesquisa.':'Usa o scanner QR ou adiciona o primeiro contacto manualmente.'}</p></div>`;return;}
+  if(!list.length){const al=activeLeads().length;el.innerHTML=`<div class="empty"><div class="ei">👤</div><h3>${al?'Sem resultados':'Sem leads ainda'}</h3><p>${al?'Ajusta os filtros ou a pesquisa.':'Usa o scanner QR ou adiciona o primeiro contacto manualmente.'}</p></div>`;return;}
   el.innerHTML=list.map(l=>`<div class="lcard" onclick="showDetail('${l.id}')">
     <div class="lct"><div>
       <div class="lcn">${h(l.nome)}</div>
@@ -631,7 +650,8 @@ function renderLeads(){
     </div></div>`).join('');
 }
 function renderStats(){
-  const t=D.leads.length,p=D.leads.filter(l=>l.estado==='pendente').length,c=D.leads.filter(l=>l.estado==='contactado').length,q=D.leads.filter(l=>l.estado==='qualificado').length;
+  const leads=activeLeads();
+  const t=leads.length,p=leads.filter(l=>l.estado==='pendente').length,c=leads.filter(l=>l.estado==='contactado').length,q=leads.filter(l=>l.estado==='qualificado').length;
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="stn">${t}</div><div class="stl">Total</div></div>
     <div class="stat"><div class="stn" style="color:#92400E">${p}</div><div class="stl">Pendente</div></div>
@@ -1239,6 +1259,41 @@ function retakePhoto(){
 }
 
 /* ══════════════════════════════════════
+   ADMIN — carregar todos os leads do Gist
+══════════════════════════════════════ */
+async function loadAllLeads(btn){
+  if(!D.cfg.ghToken||!D.cfg.gistId){alert('Configura o Token e o Gist ID primeiro.');return;}
+  const orig=btn.textContent; btn.textContent='⏳ A carregar…'; btn.disabled=true;
+  try{
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{
+      headers:{'Authorization':'token '+D.cfg.ghToken,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!r.ok){alert('Erro ao aceder ao Gist: HTTP '+r.status);return;}
+    const gist=await r.json();
+    const all=[];
+    const collectors=[];
+    for(const [fname,file] of Object.entries(gist.files||{})){
+      if(fname.startsWith('leads_')&&fname.endsWith('.json')){
+        try{
+          const leads=JSON.parse(file.content||'[]');
+          if(Array.isArray(leads)){all.push(...leads); collectors.push(fname.replace('leads_','').replace('.json',''));}
+        }catch(e){}
+      }
+    }
+    all.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    adminLeads=all; adminMode=true;
+    closeMov(null,'m-set',true);
+    showView('home');
+    updateTitle();
+    toast(`👑 ${all.length} leads · ${collectors.length} collector(s)`);
+  }catch(e){
+    alert('Erro: '+(e.message||e));
+  }finally{
+    btn.textContent=orig; btn.disabled=false;
+  }
+}
+
+/* ══════════════════════════════════════
    GITHUB GIST SYNC
 ══════════════════════════════════════ */
 function dot(){return document.getElementById('sdot');}
@@ -1267,7 +1322,7 @@ async function fetchConfig(){
     const g=await r.json();
     if(g.files?.['config.json']){
       const cfg=JSON.parse(g.files['config.json'].content);
-      if(cfg.fair&&cfg.fair!==D.fair){D.fair=cfg.fair;document.getElementById('hdrt').textContent=cfg.fair;}
+      if(cfg.fair&&cfg.fair!==D.fair){D.fair=cfg.fair;updateTitle();}
       if(cfg.products)D.cfg.products=cfg.products;
       save();
     }
@@ -1323,15 +1378,17 @@ async function testSync(btn){
    EXPORT CSV
 ══════════════════════════════════════ */
 function exportCSV(){
-  if(!D.leads.length){toast('Sem leads para exportar!');return;}
+  const leads=activeLeads();
+  if(!leads.length){toast('Sem leads para exportar!');return;}
+  const suffix=adminMode?'_TODOS':'';
   const hdr=['Nome','Email','Telefone','Empresa','Cargo','Interesse','Notas','Estado','Data Follow-up','Recolhido por','Data Registo'];
-  const rows=D.leads.map(l=>[l.nome,l.email,l.tel,l.empresa,l.cargo,l.interesse,(l.notas||'').replace(/\n/g,' '),slbl(l.estado),l.date||'',l.collector||'',l.ts?new Date(l.ts).toLocaleDateString('pt-PT'):''].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));
+  const rows=leads.map(l=>[l.nome,l.email,l.tel,l.empresa,l.cargo,l.interesse,(l.notas||'').replace(/\n/g,' '),slbl(l.estado),l.date||'',l.collector||'',l.ts?new Date(l.ts).toLocaleDateString('pt-PT'):''].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));
   const csv=[hdr.join(','),...rows.map(r=>r.join(','))].join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=`leads_${D.fair.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href=url;a.download=`leads_${D.fair.replace(/\s+/g,'_')}${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  toast(`${D.leads.length} leads exportados ✅`);
+  toast(`${leads.length} leads exportados ✅`);
 }
 
 /* ══════════════════════════════════════
@@ -1359,7 +1416,7 @@ function saveSettings(){
   D.cfg.products=document.getElementById('si-prods').value.split('\n').map(l=>l.trim()).filter(Boolean);
   D.cfg.ghToken=document.getElementById('si-token').value.trim();
   D.cfg.gistId=document.getElementById('si-gist').value.trim();
-  save();document.getElementById('hdrt').textContent=D.fair;
+  save();updateTitle();
   closeMov(null,'m-set',true);toast('Definições guardadas!');
   if(D.cfg.ghToken&&D.cfg.gistId)pushLeads().then(ok=>{if(ok)toast('Config enviada para GitHub ✅');});
 }
@@ -1388,7 +1445,7 @@ let tt;function toast(msg){const el=document.getElementById('toast');el.textCont
    INIT
 ══════════════════════════════════════ */
 load();
-document.getElementById('hdrt').textContent=D.fair;
+updateTitle();
 document.getElementById('sdot').style.display=D.cfg.gistId?'block':'none';
 renderLeads();
 setupCropEvents();

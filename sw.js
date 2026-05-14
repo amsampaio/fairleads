@@ -1,5 +1,5 @@
-const CACHE = 'fairleads-v6';
-const CORE  = ['./index.html', './manifest.json', './icon.svg'];
+const CACHE = 'fairleads-v7';
+const CORE  = ['./index.html', './manifest.json', './icon.svg', './icon.ico'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
