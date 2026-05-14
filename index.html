@@ -1376,6 +1376,8 @@ async function testSync(btn){
 
   let msg = '';
   try{
+    // PATCH a neutral test marker — don't touch config.json so we don't
+    // overwrite a fair name that was set on another device.
     const r = await fetch('https://api.github.com/gists/' + gistId, {
       method: 'PATCH',
       headers: {
@@ -1383,10 +1385,32 @@ async function testSync(btn){
         'Content-Type':  'application/json'
       },
       body: JSON.stringify({
-        files: { 'config.json': { content: JSON.stringify({fair: D.fair, products: D.cfg.products}, null, 2) } }
+        files: { '_sync_test.json': { content: '{"ok":true}' } }
       })
     });
-    if     (r.ok)          msg = '✅ Funcionou! Verifica o teu Gist.';
+    if(r.ok){
+      // Read config.json from the gist response and apply to the form + app state
+      const g = await r.json();
+      let pulled = [];
+      if(g.files?.['config.json']){
+        try{
+          const cfg = JSON.parse(g.files['config.json'].content);
+          if(cfg.fair){
+            D.fair = cfg.fair;
+            document.getElementById('si-fair').value = cfg.fair;
+            pulled.push('nome da feira');
+          }
+          if(cfg.products && cfg.products.length){
+            D.cfg.products = cfg.products;
+            document.getElementById('si-prods').value = cfg.products.join('\n');
+            pulled.push('produtos');
+          }
+        }catch(_){}
+      }
+      msg = pulled.length
+        ? `✅ Funcionou! Importado: ${pulled.join(' e ')}.`
+        : '✅ Funcionou! Sem configuração anterior no Gist.';
+    }
     else if(r.status===401) msg = '❌ Token inválido ou sem permissão "gist".';
     else if(r.status===404) msg = '❌ Gist ID não encontrado. Confirma o ID.';
     else if(r.status===422) msg = '❌ Gist ID inválido (erro 422).';
@@ -1396,7 +1420,7 @@ async function testSync(btn){
   }
 
   if(btn){ btn.textContent = orig; btn.disabled = false; }
-  alert(msg); // alert is always visible, unlike toast
+  alert(msg);
 }
 
 /* ══════════════════════════════════════
