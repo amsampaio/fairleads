@@ -466,11 +466,11 @@ a.dval{color:var(--p);text-decoration:none;}
     <div class="frow" style="margin-bottom:12px">
       <div class="fg">
         <label class="fl"><span>Novo PIN (4 dígitos)</span></label>
-        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin" placeholder="••••">
+        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin" placeholder="••••" autocomplete="new-password">
       </div>
       <div class="fg">
         <label class="fl"><span>Confirmar PIN</span></label>
-        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin2" placeholder="••••">
+        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin2" placeholder="••••" autocomplete="new-password">
       </div>
     </div>
 
@@ -1451,6 +1451,12 @@ function openSettings(){
   document.getElementById('si-token').value=D.cfg.ghToken||'';
   document.getElementById('si-gist').value=D.cfg.gistId||'';
   openMov('m-set');
+  // Edge/Chrome password manager can autofill password fields asynchronously;
+  // clearing them again after a short delay prevents saveSettings from aborting.
+  setTimeout(()=>{
+    document.getElementById('si-pin').value='';
+    document.getElementById('si-pin2').value='';
+  },300);
 }
 function saveSettings(){
   const np=document.getElementById('si-pin').value.trim();
