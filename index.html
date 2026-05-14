@@ -1343,6 +1343,24 @@ async function fetchConfig(){
     }
   }catch(e){}
 }
+// Pull only leads (no config overwrite) — used after saveSettings to avoid
+// clobbering the user's just-saved fair name / products with the old Gist values.
+async function pullLeads(){
+  if(!D.cfg.gistId)return;
+  try{
+    const hdrs=D.cfg.ghToken?{'Authorization':'token '+D.cfg.ghToken}:{};
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{headers:hdrs});
+    if(!r.ok)return;
+    const g=await r.json();
+    const fname=`leads_${(D.user||'user').replace(/\s+/g,'_')}.json`;
+    if(g.files?.[fname]){
+      const remote=JSON.parse(g.files[fname].content);
+      const ids=new Set(D.leads.map(l=>l.id));
+      let added=0;for(const l of remote){if(!ids.has(l.id)){D.leads.push(l);added++;}}
+      if(added){save();renderLeads();toast(`${added} lead(s) importado(s) do GitHub`);}
+    }
+  }catch(e){}
+}
 async function testSync(btn){
   const token  = (document.getElementById('si-token').value  || '').trim();
   const gistId = (document.getElementById('si-gist').value   || '').trim();
@@ -1427,8 +1445,9 @@ function saveSettings(){
   document.getElementById('sdot').style.display=D.cfg.gistId?'block':'none';
   closeMov(null,'m-set',true);toast('Definições guardadas!');
   if(D.cfg.ghToken&&D.cfg.gistId){
-    // Push config + pull leads (útil na primeira configuração numa PWA nova)
-    fetchConfig().then(()=>pushLeads());
+    // Push config first (preserves the user's just-saved fair name / products),
+    // then pull only leads — never fetchConfig here or it would overwrite D.fair.
+    pushLeads().then(()=>pullLeads());
   }
 }
 function clearAll(){
