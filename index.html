@@ -686,6 +686,34 @@ function setF(f,el){flt=f;document.querySelectorAll('.chip').forEach(c=>c.classL
 /* ══════════════════════════════════════
    QR SCANNER
 ══════════════════════════════════════ */
+async function getRearStream(){
+  // Pede resolução moderada com frameRate mínimo garantido.
+  // ideal:1280 evita frames 4K que tornam o processamento lento.
+  const vopt={width:{ideal:1280,max:1920},height:{ideal:720,max:1080},frameRate:{ideal:30,min:15}};
+  // 1ª tentativa: câmara traseira padrão
+  const s0=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...vopt}});
+  const t0=s0.getVideoTracks()[0];
+  const c0=t0.getCapabilities?.()||{};
+  // Se tem autofoco contínuo → é a câmara principal, usar
+  if(!c0.focusMode||c0.focusMode.includes('continuous'))return s0;
+  // Sem autofoco → provável ultra-wide (Samsung S/A recentes):
+  // percorrer todas as câmaras e encontrar a traseira com autofoco
+  s0.getTracks().forEach(t=>t.stop());
+  try{
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    for(const d of devs.filter(d=>d.kind==='videoinput')){
+      try{
+        const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:d.deviceId},...vopt}});
+        const t=s.getVideoTracks()[0];
+        const c=t.getCapabilities?.()||{};
+        if(c.facingMode?.includes('environment')&&c.focusMode?.includes('continuous'))return s;
+        s.getTracks().forEach(t=>t.stop());
+      }catch(e){}
+    }
+  }catch(e){}
+  // Nada melhor encontrado — volta ao padrão
+  return navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...vopt}});
+}
 async function startScan(){
   const msg=document.getElementById('scan-msg');
   torchOn=false;torchAuto=true;brightFrames=0;
@@ -694,13 +722,13 @@ async function startScan(){
   document.getElementById('scan-ctrls').style.display='none';
   document.getElementById('zoom-wrap').style.display='none';
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+    msg.textContent='⏳ A iniciar câmara…';
+    stream=await getRearStream();
     const vid=document.getElementById('qr-video');vid.srcObject=stream;await vid.play();
-    // Fixar configurações da câmara para leitura de QR: foco contínuo,
-    // exposição e balanço de brancos contínuos — não depende dos defaults do device
+    // Fixar foco, exposição e balanço de brancos contínuos
     const track=stream.getVideoTracks()[0];
     if(track){
-      const caps=track.getCapabilities?track.getCapabilities():{};
+      const caps=track.getCapabilities?.()||{};
       const adv=[];
       if(caps.focusMode?.includes('continuous'))adv.push({focusMode:'continuous'});
       if(caps.exposureMode?.includes('continuous'))adv.push({exposureMode:'continuous'});
@@ -709,8 +737,6 @@ async function startScan(){
     }
     msg.textContent='📷 Aponta para um QR Code…';msg.className='scan-msg';
     scanning=true;raf=requestAnimationFrame(tick);
-    // Aguardar 700ms para a câmara estabilizar antes de ler capabilities
-    // (algumas câmaras Android reportam caps vazias logo após play())
     setTimeout(setupScanControls,700);
   }catch(e){msg.textContent='⚠️ Sem acesso à câmara: '+e.message;msg.className='scan-msg scan-err';}
 }

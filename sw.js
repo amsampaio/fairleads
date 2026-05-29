@@ -1,4 +1,4 @@
-const CACHE = 'fairleads-v14';
+const CACHE = 'fairleads-v15';
 const CORE  = ['./index.html', './manifest.json', './icon.svg', './icon.ico', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
