@@ -686,33 +686,49 @@ function setF(f,el){flt=f;document.querySelectorAll('.chip').forEach(c=>c.classL
 /* ══════════════════════════════════════
    QR SCANNER
 ══════════════════════════════════════ */
+const CAM_KEY='fl_cam';
+const VOPT={width:{ideal:1280,max:1920},height:{ideal:720,max:1080},frameRate:{ideal:30,min:15}};
 async function getRearStream(){
-  // Pede resolução moderada com frameRate mínimo garantido.
-  // ideal:1280 evita frames 4K que tornam o processamento lento.
-  const vopt={width:{ideal:1280,max:1920},height:{ideal:720,max:1080},frameRate:{ideal:30,min:15}};
-  // 1ª tentativa: câmara traseira padrão
-  const s0=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...vopt}});
+  // Caminho rápido: deviceId já conhecido (guardado na 1ª abertura)
+  const cached=localStorage.getItem(CAM_KEY);
+  if(cached){
+    try{
+      const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:cached},...VOPT}});
+      const c=s.getVideoTracks()[0].getCapabilities?.()||{};
+      if(!c.focusMode||c.focusMode.includes('continuous'))return s;
+      // Câmara em cache já não serve (ex: dispositivo diferente)
+      s.getTracks().forEach(t=>t.stop());
+      localStorage.removeItem(CAM_KEY);
+    }catch(e){localStorage.removeItem(CAM_KEY);}
+  }
+  // 1ª abertura: câmara traseira padrão
+  const s0=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...VOPT}});
   const t0=s0.getVideoTracks()[0];
   const c0=t0.getCapabilities?.()||{};
-  // Se tem autofoco contínuo → é a câmara principal, usar
-  if(!c0.focusMode||c0.focusMode.includes('continuous'))return s0;
-  // Sem autofoco → provável ultra-wide (Samsung S/A recentes):
-  // percorrer todas as câmaras e encontrar a traseira com autofoco
+  if(!c0.focusMode||c0.focusMode.includes('continuous')){
+    // Câmara principal encontrada — guardar deviceId para próximas aberturas
+    const did=t0.getSettings?.().deviceId;
+    if(did)localStorage.setItem(CAM_KEY,did);
+    return s0;
+  }
+  // Ultra-wide detectada (sem autofoco) — procurar câmara principal
   s0.getTracks().forEach(t=>t.stop());
   try{
     const devs=await navigator.mediaDevices.enumerateDevices();
     for(const d of devs.filter(d=>d.kind==='videoinput')){
       try{
-        const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:d.deviceId},...vopt}});
+        const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:d.deviceId},...VOPT}});
         const t=s.getVideoTracks()[0];
         const c=t.getCapabilities?.()||{};
-        if(c.facingMode?.includes('environment')&&c.focusMode?.includes('continuous'))return s;
+        if(c.facingMode?.includes('environment')&&c.focusMode?.includes('continuous')){
+          localStorage.setItem(CAM_KEY,d.deviceId);
+          return s;
+        }
         s.getTracks().forEach(t=>t.stop());
       }catch(e){}
     }
   }catch(e){}
-  // Nada melhor encontrado — volta ao padrão
-  return navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...vopt}});
+  return navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...VOPT}});
 }
 async function startScan(){
   const msg=document.getElementById('scan-msg');
