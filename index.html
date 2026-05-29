@@ -91,6 +91,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 canvas#qr-cv{display:none;}
 .scan-msg{background:#fff;border:1px solid var(--br);border-radius:12px;padding:11px 16px;font-size:14px;color:var(--t);width:100%;max-width:380px;text-align:center;}
 .scan-err{background:#FEF2F2;border-color:#FECACA;color:var(--err);}
+.scan-ctrls{display:flex;align-items:center;gap:10px;width:100%;max-width:380px;}
+.btn-torch{background:#1e293b;border:none;border-radius:10px;padding:9px 15px;font-size:20px;cursor:pointer;flex-shrink:0;transition:background .2s;line-height:1;}
+.btn-torch.on{background:#FCD34D;}
+.zoom-wrap{display:flex;align-items:center;gap:8px;flex:1;}
+.zoom-slider{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:#d1d5db;border-radius:2px;outline:none;}
+.zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--p);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);}
+.zoom-lbl{font-size:12px;min-width:32px;text-align:right;color:var(--tm);}
 
 /* FORM */
 .fsec{margin-bottom:20px;}
@@ -212,6 +219,14 @@ a.dval{color:var(--p);text-decoration:none;}
         <video id="qr-video" autoplay playsinline muted></video>
         <canvas id="qr-cv"></canvas>
         <div class="camov"><div class="camfr"><div class="camln"></div></div></div>
+      </div>
+      <div class="scan-ctrls" id="scan-ctrls" style="display:none">
+        <button class="btn-torch" id="btn-torch" onclick="toggleTorch()" title="Flash">🔦</button>
+        <div class="zoom-wrap" id="zoom-wrap" style="display:none">
+          <span style="font-size:14px">🔍</span>
+          <input type="range" id="zoom-slider" class="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="applyZoom(this.value)">
+          <span class="zoom-lbl" id="zoom-lbl">1×</span>
+        </div>
       </div>
       <div class="scan-msg" id="scan-msg">A iniciar câmara…</div>
       <button class="btn btn-o" style="max-width:320px;margin-top:4px" onclick="prepareNew();showView('form')">
@@ -524,6 +539,7 @@ let D = { fair:'Feira', user:'', cfg:{pin:'',ghToken:'',gistId:'',products:[]}, 
 let adminMode=false, adminLeads=[];  // resets on page reload — never persisted
 let curV='home', editId=null, flt='all';
 let scanning=false, stream=null, raf=null;
+let torchOn=false, torchAuto=true, brightFrames=0, zoomCap=null, pinchDist0=null, pinchZoom0=1;
 let recog=null;
 
 function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[]},p.cfg||{});}}catch(e){}}
@@ -672,16 +688,72 @@ function setF(f,el){flt=f;document.querySelectorAll('.chip').forEach(c=>c.classL
 ══════════════════════════════════════ */
 async function startScan(){
   const msg=document.getElementById('scan-msg');
+  torchOn=false;torchAuto=true;brightFrames=0;
+  document.getElementById('btn-torch').classList.remove('on');
+  document.getElementById('scan-ctrls').style.display='none';
+  document.getElementById('zoom-wrap').style.display='none';
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
     const vid=document.getElementById('qr-video');vid.srcObject=stream;await vid.play();
     msg.textContent='📷 Aponta para um QR Code…';msg.className='scan-msg';
     scanning=true;raf=requestAnimationFrame(tick);
+    setupScanControls();
   }catch(e){msg.textContent='⚠️ Sem acesso à câmara: '+e.message;msg.className='scan-msg scan-err';}
+}
+function setupScanControls(){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  const caps=track.getCapabilities?track.getCapabilities():{};
+  let any=false;
+  if(caps.torch){any=true;}
+  else{document.getElementById('btn-torch').style.display='none';}
+  if(caps.zoom){
+    any=true;zoomCap=caps.zoom;
+    const sl=document.getElementById('zoom-slider');
+    sl.min=caps.zoom.min||1;sl.max=Math.min(caps.zoom.max||8,8);
+    sl.step=caps.zoom.step||0.1;sl.value=caps.zoom.min||1;
+    document.getElementById('zoom-lbl').textContent=(caps.zoom.min||1).toFixed(1)+'×';
+    document.getElementById('zoom-wrap').style.display='flex';
+  }
+  if(any)document.getElementById('scan-ctrls').style.display='flex';
+}
+async function toggleTorch(){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  torchOn=!torchOn;torchAuto=false;
+  try{await track.applyConstraints({advanced:[{torch:torchOn}]});}catch(e){}
+  document.getElementById('btn-torch').classList.toggle('on',torchOn);
+}
+async function applyZoom(v){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  document.getElementById('zoom-lbl').textContent=parseFloat(v).toFixed(1)+'×';
+  try{await track.applyConstraints({advanced:[{zoom:parseFloat(v)}]});}catch(e){}
+}
+function checkBrightness(data){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  const caps=track.getCapabilities?track.getCapabilities():{};
+  if(!caps.torch)return;
+  let sum=0,n=0,step=Math.max(1,Math.floor(data.length/4000));
+  for(let i=0;i<data.length;i+=step*4){sum+=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];n++;}
+  const bright=n?sum/n:128;
+  const should=bright<60;
+  if(should!==torchOn){
+    torchOn=should;
+    track.applyConstraints({advanced:[{torch:torchOn}]}).catch(()=>{});
+    document.getElementById('btn-torch').classList.toggle('on',torchOn);
+  }
 }
 function stopScan(){
   scanning=false;
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  if(stream){
+    const track=stream.getVideoTracks()[0];
+    if(track&&torchOn){try{track.applyConstraints({advanced:[{torch:false}]});}catch(e){}}
+    stream.getTracks().forEach(t=>t.stop());stream=null;
+  }
+  torchOn=false;torchAuto=true;zoomCap=null;
+  document.getElementById('btn-torch').style.display='';
   if(raf){cancelAnimationFrame(raf);raf=null;}
 }
 function tick(){
@@ -693,6 +765,7 @@ function tick(){
     const img=ctx.getImageData(0,0,cv.width,cv.height);
     const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
     if(code){stopScan();onQR(code.data);return;}
+    if(torchAuto&&++brightFrames%30===0)checkBrightness(img.data);
   }
   raf=requestAnimationFrame(tick);
 }
@@ -1518,6 +1591,27 @@ document.addEventListener('pointerdown',e=>{
 },true);
 fetchConfig(); // ao arrancar: sincroniza config e importa leads do Gist se configurado
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// Pinch-to-zoom no ecrã de scan
+(()=>{
+  const box=document.getElementById('cambox');
+  box.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      pinchZoom0=parseFloat(document.getElementById('zoom-slider').value)||1;
+    }
+  },{passive:true});
+  box.addEventListener('touchmove',e=>{
+    if(e.touches.length===2&&pinchDist0&&zoomCap){
+      e.preventDefault();
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      let v=Math.min(zoomCap.max,Math.max(zoomCap.min,pinchZoom0*(d/pinchDist0)));
+      document.getElementById('zoom-slider').value=v;
+      applyZoom(v);
+    }
+  },{passive:false});
+  box.addEventListener('touchend',()=>{pinchDist0=null;},{passive:true});
+})();
 </script>
 </body>
 </html>
