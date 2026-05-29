@@ -780,16 +780,17 @@ function tick(){
   const vid=document.getElementById('qr-video'),cv=document.getElementById('qr-cv');
   if(vid.readyState===vid.HAVE_ENOUGH_DATA){
     const vw=vid.videoWidth,vh=vid.videoHeight;
-    // Upscale frames pequenos — câmaras básicas podem dar 480-720p;
-    // o jsQR precisa de pelo menos ~4px por célula do QR para descodificar.
-    const scale=vw<1200?1200/vw:1;
-    cv.width=Math.round(vw*scale);cv.height=Math.round(vh*scale);
+    // Cortar ao quadrado central do frame (equivale à janela visível na cambox)
+    // e normalizar para 640px. Assim câmaras fracas fazem upscale, câmaras
+    // potentes (Samsung flagship com 3264x2448) fazem downscale — processamento
+    // rápido e consistente em todos os dispositivos.
+    const crop=Math.min(vw,vh);
+    const sx=(vw-crop)/2, sy=(vh-crop)/2;
+    const TARGET=640;
+    cv.width=TARGET;cv.height=TARGET;
     const ctx=cv.getContext('2d');
-    // Contraste ligeiro melhora leitura em QR codes com baixo contraste
-    ctx.filter='contrast(140%) brightness(108%)';
-    ctx.drawImage(vid,0,0,cv.width,cv.height);
-    ctx.filter='none';
-    const img=ctx.getImageData(0,0,cv.width,cv.height);
+    ctx.drawImage(vid,sx,sy,crop,crop,0,0,TARGET,TARGET);
+    const img=ctx.getImageData(0,0,TARGET,TARGET);
     const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
     if(code){stopScan();onQR(code.data);return;}
     if(torchAuto&&++brightFrames%30===0)checkBrightness(img.data);
