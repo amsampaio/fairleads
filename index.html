@@ -484,6 +484,11 @@ a.dval{color:var(--p);text-decoration:none;}
     <div class="fst" data-i18n="set_prods_sec" style="margin-top:16px">🎯 Produtos sugeridos</div>
     <div class="fg">
       <label class="fl"><span data-i18n="set_prods_lbl">Um produto por linha</span></label>
+      <div class="lang-btns" style="margin-bottom:6px">
+        <button class="btn-lang on" data-plang="pt" onclick="switchProdsLang('pt',this)" type="button">🇵🇹 PT</button>
+        <button class="btn-lang" data-plang="en" onclick="switchProdsLang('en',this)" type="button">🇬🇧 EN</button>
+        <button class="btn-lang" data-plang="es" onclick="switchProdsLang('es',this)" type="button">🇪🇸 ES</button>
+      </div>
       <textarea class="fi" id="si-prods" style="min-height:110px" data-i18n-ph="set_prods_ph" placeholder="Produto A&#10;Produto B&#10;Serviço Premium C"></textarea>
     </div>
 
@@ -546,14 +551,14 @@ a.dval{color:var(--p);text-decoration:none;}
    DATA
 ══════════════════════════════════════ */
 const KEY = 'fl_v2';
-let D = { fair:'Feira', user:'', cfg:{pin:'',ghToken:'',gistId:'',products:[]}, leads:[] };
+let D = { fair:'Feira', user:'', cfg:{pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]}, leads:[] };
 let adminMode=false, adminLeads=[];  // resets on page reload — never persisted
 let curV='home', editId=null, flt='all';
 let scanning=false, stream=null, raf=null;
 let torchOn=false, torchAuto=true, brightFrames=0, zoomCap=null, pinchDist0=null, pinchZoom0=1;
 let recog=null;
 
-function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[]},p.cfg||{});}}catch(e){}}
+function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},p.cfg||{});}}catch(e){}}
 function save(){localStorage.setItem(KEY,JSON.stringify(D));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
@@ -652,7 +657,9 @@ const LANGS = {
     sync_err_422:'Gist ID inválido (erro 422).', sync_err_net:'Erro de rede',
     dictate_na:'🎤 Ditado não suportado neste browser',
     dictate_listening:'🎤 A ouvir… (toca no microfone para parar)',
-    dictate_err:'🎤 Erro: {e}'
+    dictate_err:'🎤 Erro: {e}',
+    form_new_title:'Novo Lead', form_edit_title:'Editar Lead', det_title:'Detalhes',
+    sugg_label:'Sugestões'
   },
   en:{
     nav_leads:'Leads', nav_scan:'Scan', nav_new:'New', nav_card:'Card',
@@ -734,7 +741,9 @@ const LANGS = {
     sync_err_422:'Invalid Gist ID (error 422).', sync_err_net:'Network error',
     dictate_na:'🎤 Dictation not supported in this browser',
     dictate_listening:'🎤 Listening… (tap microphone to stop)',
-    dictate_err:'🎤 Error: {e}'
+    dictate_err:'🎤 Error: {e}',
+    form_new_title:'New Lead', form_edit_title:'Edit Lead', det_title:'Details',
+    sugg_label:'Suggestions'
   },
   es:{
     nav_leads:'Leads', nav_scan:'Scan', nav_new:'Nuevo', nav_card:'Tarjeta',
@@ -816,7 +825,9 @@ const LANGS = {
     sync_err_422:'Gist ID inválido (error 422).', sync_err_net:'Error de red',
     dictate_na:'🎤 Dictado no soportado en este navegador',
     dictate_listening:'🎤 Escuchando… (toca el micrófono para parar)',
-    dictate_err:'🎤 Error: {e}'
+    dictate_err:'🎤 Error: {e}',
+    form_new_title:'Nuevo Lead', form_edit_title:'Editar Lead', det_title:'Detalles',
+    sugg_label:'Sugerencias'
   }
 };
 
@@ -914,7 +925,7 @@ function showView(v){
   const bnav=document.querySelector('.bnav'),main=document.querySelector('.main');
   if(v==='form'||v==='detail'){
     bk.style.display='flex';hs.style.display='none';sd.style.display='none';
-    tt.textContent=v==='form'?(editId?t('det_edit').replace('✏️ ',''):'Novo Lead'):'Detalhes';
+    tt.textContent=v==='form'?(editId?t('form_edit_title'):t('form_new_title')):t('det_title');
     bnav.style.display='none';
     main.style.paddingBottom='12px';
   } else {
@@ -1247,13 +1258,13 @@ function onProdInput(){
   const inp=document.getElementById('f-int'),val=inp.value;
   const lastComma=val.lastIndexOf(',');
   const cur=val.slice(lastComma+1).trim().toLowerCase();
-  const prods=D.cfg.products||[];
+  const prods=(curLang==='en'?D.cfg.products_en:curLang==='es'?D.cfg.products_es:D.cfg.products)||D.cfg.products||[];
   if(!prods.length){document.getElementById('sugg-drop').style.display='none';return;}
   const used=val.split(',').map(s=>s.trim().toLowerCase());
   const matches=prods.filter(p=>(!cur||p.toLowerCase().includes(cur))&&!used.includes(p.toLowerCase()));
   const drop=document.getElementById('sugg-drop');
   if(!matches.length){drop.style.display='none';return;}
-  drop.innerHTML=(cur?'':'<div class="sugg-item sep">Sugestões</div>')+matches.map(p=>`<div class="sugg-item" onmousedown="addProd(event,'${p.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">📦 ${h(p)}</div>`).join('');
+  drop.innerHTML=(cur?'':'<div class="sugg-item sep">'+t('sugg_label')+'</div>')+matches.map(p=>`<div class="sugg-item" onmousedown="addProd(event,'${p.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">📦 ${h(p)}</div>`).join('');
   drop.style.display='block';
 }
 function addProd(e,p){
@@ -1767,7 +1778,7 @@ async function pushLeads(){
       headers:{'Authorization':'token '+D.cfg.ghToken,'Content-Type':'application/json'},
       body:JSON.stringify({files:{
         [fname]:{content:JSON.stringify(D.leads,null,2)},
-        'config.json':{content:JSON.stringify({fair:D.fair,products:D.cfg.products},null,2)}
+        'config.json':{content:JSON.stringify({fair:D.fair,products:D.cfg.products,products_en:D.cfg.products_en,products_es:D.cfg.products_es},null,2)}
       }})
     });
     return r.ok;
@@ -1784,6 +1795,8 @@ async function fetchConfig(){
       const cfg=JSON.parse(g.files['config.json'].content);
       if(cfg.fair&&cfg.fair!==D.fair){D.fair=cfg.fair;updateTitle();}
       if(cfg.products)D.cfg.products=cfg.products;
+      if(cfg.products_en)D.cfg.products_en=cfg.products_en;
+      if(cfg.products_es)D.cfg.products_es=cfg.products_es;
       save();
     }
     // import leads from same user file if any
@@ -1855,7 +1868,11 @@ async function testSync(btn){
           }
           if(cfg.products && cfg.products.length){
             D.cfg.products = cfg.products;
-            document.getElementById('si-prods').value = cfg.products.join('\n');
+            if(cfg.products_en)D.cfg.products_en=cfg.products_en;
+            if(cfg.products_es)D.cfg.products_es=cfg.products_es;
+            // Update buffer and textarea for current editing lang
+            _prodsBuf={pt:D.cfg.products.join('\n'),en:(D.cfg.products_en||[]).join('\n'),es:(D.cfg.products_es||[]).join('\n')};
+            document.getElementById('si-prods').value=_prodsBuf[_editingProdsLang]||_prodsBuf.pt;
             pulled.push(t('sync_pulled_prods'));
           }
         }catch(_){}
@@ -1896,10 +1913,28 @@ function exportCSV(){
 /* ══════════════════════════════════════
    SETTINGS
 ══════════════════════════════════════ */
+let _editingProdsLang = 'pt'; // which language's products are shown in textarea
+
+function prodsKey(l){return l==='pt'?'products':('products_'+l);}
+
+function switchProdsLang(l, btn){
+  // Save current textarea back to in-memory (not D yet — that happens on Save)
+  _prodsBuf[_editingProdsLang]=document.getElementById('si-prods').value;
+  _editingProdsLang=l;
+  document.getElementById('si-prods').value=_prodsBuf[l]||'';
+  document.querySelectorAll('[data-plang]').forEach(b=>b.classList.toggle('on',b.dataset.plang===l));
+}
+
+let _prodsBuf={pt:'',en:'',es:''};
+
 function openSettings(){
   document.getElementById('si-user').value=D.user||'';
   document.getElementById('si-fair').value=D.fair||'';
-  document.getElementById('si-prods').value=(D.cfg.products||[]).join('\n');
+  // Load all product lists into buffer, show current editing lang
+  _editingProdsLang='pt';
+  _prodsBuf={pt:(D.cfg.products||[]).join('\n'),en:(D.cfg.products_en||[]).join('\n'),es:(D.cfg.products_es||[]).join('\n')};
+  document.getElementById('si-prods').value=_prodsBuf.pt;
+  document.querySelectorAll('[data-plang]').forEach(b=>b.classList.toggle('on',b.dataset.plang==='pt'));
   document.getElementById('si-pin').value='';document.getElementById('si-pin2').value='';
   document.getElementById('si-token').value=D.cfg.ghToken||'';
   document.getElementById('si-gist').value=D.cfg.gistId||'';
@@ -1923,7 +1958,11 @@ function saveSettings(){
   }
   D.user=document.getElementById('si-user').value.trim();
   D.fair=document.getElementById('si-fair').value.trim()||'Feira';
-  D.cfg.products=document.getElementById('si-prods').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  // Flush current textarea into buffer before saving all
+  _prodsBuf[_editingProdsLang]=document.getElementById('si-prods').value;
+  D.cfg.products=_prodsBuf.pt.split('\n').map(l=>l.trim()).filter(Boolean);
+  D.cfg.products_en=_prodsBuf.en.split('\n').map(l=>l.trim()).filter(Boolean);
+  D.cfg.products_es=_prodsBuf.es.split('\n').map(l=>l.trim()).filter(Boolean);
   D.cfg.ghToken=document.getElementById('si-token').value.trim();
   D.cfg.gistId=document.getElementById('si-gist').value.trim();
   save();updateTitle();
