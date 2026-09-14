@@ -193,7 +193,7 @@ a.dval{color:var(--p);text-decoration:none;}
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
     </svg>
-    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v23</span>
+    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v24</span>
   </button>
 </div>
 
@@ -1067,17 +1067,17 @@ async function startScan(){
     const track=stream.getVideoTracks()[0];
     if(track){
       const caps=track.getCapabilities?.()||{};
-      const adv=[];
-      if(caps.focusMode?.includes('continuous'))adv.push({focusMode:'continuous'});
-      if(caps.exposureMode?.includes('continuous'))adv.push({exposureMode:'continuous'});
-      if(caps.whiteBalanceMode?.includes('continuous'))adv.push({whiteBalanceMode:'continuous'});
-      // Apply initial 2× zoom immediately — before scanning starts
+      // Combine all constraints into one object — advanced array items are alternatives, not additive
+      const adv={};
+      if(caps.focusMode?.includes('continuous'))adv.focusMode='continuous';
+      if(caps.exposureMode?.includes('continuous'))adv.exposureMode='continuous';
+      if(caps.whiteBalanceMode?.includes('continuous'))adv.whiteBalanceMode='continuous';
       if(caps.zoom){
         const zStart=Math.min(2.0, caps.zoom.max||2);
-        adv.push({zoom:zStart});
+        adv.zoom=zStart;
         zoomCap=caps.zoom;
       }
-      if(adv.length)try{await track.applyConstraints({advanced:adv});}catch(e){}
+      if(Object.keys(adv).length)try{await track.applyConstraints({advanced:[adv]});}catch(e){}
     }
     msg.textContent=t('scan_prompt');msg.className='scan-msg';
     scanning=true;raf=requestAnimationFrame(tick);
