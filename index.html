@@ -193,7 +193,7 @@ a.dval{color:var(--p);text-decoration:none;}
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
     </svg>
-    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v21</span>
+    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v22</span>
   </button>
 </div>
 
@@ -557,7 +557,7 @@ let adminMode=false, adminLeads=[];  // resets on page reload — never persiste
 let curV='home', editId=null, flt='all';
 let scanning=false, stream=null, raf=null;
 let torchOn=false, torchAuto=true, brightFrames=0, zoomCap=null, pinchDist0=null, pinchZoom0=1;
-let _lastQR='', _qrHits=0; // confirmation counter — avoids firing on partial reads
+let _lastQR='', _qrFirstSeen=0; // time-based confirmation — avoids firing on partial reads
 let recog=null;
 
 function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},p.cfg||{});}}catch(e){}}
@@ -1054,7 +1054,7 @@ async function getRearStream(){
 }
 async function startScan(){
   const msg=document.getElementById('scan-msg');
-  torchOn=false;torchAuto=true;brightFrames=0;_lastQR='';_qrHits=0;
+  torchOn=false;torchAuto=true;brightFrames=0;_lastQR='';_qrFirstSeen=0;
   document.getElementById('btn-torch').classList.remove('on');
   document.getElementById('btn-torch').style.display='';
   document.getElementById('scan-ctrls').style.display='none';
@@ -1140,7 +1140,7 @@ function stopScan(){
     if(track&&torchOn){try{track.applyConstraints({advanced:[{torch:false}]});}catch(e){}}
     stream.getTracks().forEach(t=>t.stop());stream=null;
   }
-  torchOn=false;torchAuto=true;zoomCap=null;_lastQR='';_qrHits=0;
+  torchOn=false;torchAuto=true;zoomCap=null;_lastQR='';_qrFirstSeen=0;
   document.getElementById('btn-torch').style.display='';
   if(raf){cancelAnimationFrame(raf);raf=null;}
 }
@@ -1161,16 +1161,24 @@ function tick(){
     ctx.drawImage(vid,sx,sy,crop,crop,0,0,TARGET,TARGET);
     const img=ctx.getImageData(0,0,TARGET,TARGET);
     const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
-    if(code && code.data && code.data.trim().length>3){
-      if(code.data===_lastQR){
-        _qrHits++;
-        if(_qrHits>=2){_lastQR='';_qrHits=0;stopScan();onQR(code.data);return;}
+    const raw=code?.data?.trim()||'';
+    // Validate: must have real content (min length + at least one alphanumeric char)
+    const valid=raw.length>=6 && /[a-zA-Z0-9@.+\-_]/.test(raw);
+    if(valid){
+      const now=Date.now();
+      if(raw===_lastQR){
+        // Same data stable for 200ms → confirmed real read
+        if(now-_qrFirstSeen>=200){
+          _lastQR='';_qrFirstSeen=0;
+          stopScan();onQR(raw);return;
+        }
       } else {
-        _lastQR=code.data; _qrHits=1;
+        // New candidate — start timer
+        _lastQR=raw; _qrFirstSeen=now;
       }
     } else {
-      // Failed read — reset counter so partial garbage doesn't accumulate
-      if(_qrHits>0&&code?.data!==_lastQR){_lastQR='';_qrHits=0;}
+      // Nothing valid in frame — reset
+      _lastQR=''; _qrFirstSeen=0;
     }
     if(torchAuto&&++brightFrames%30===0)checkBrightness(img.data);
   }
