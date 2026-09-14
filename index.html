@@ -193,7 +193,7 @@ a.dval{color:var(--p);text-decoration:none;}
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
     </svg>
-    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v22</span>
+    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v23</span>
   </button>
 </div>
 
@@ -1071,6 +1071,12 @@ async function startScan(){
       if(caps.focusMode?.includes('continuous'))adv.push({focusMode:'continuous'});
       if(caps.exposureMode?.includes('continuous'))adv.push({exposureMode:'continuous'});
       if(caps.whiteBalanceMode?.includes('continuous'))adv.push({whiteBalanceMode:'continuous'});
+      // Apply initial 2× zoom immediately — before scanning starts
+      if(caps.zoom){
+        const zStart=Math.min(2.0, caps.zoom.max||2);
+        adv.push({zoom:zStart});
+        zoomCap=caps.zoom;
+      }
       if(adv.length)try{await track.applyConstraints({advanced:adv});}catch(e){}
     }
     msg.textContent=t('scan_prompt');msg.className='scan-msg';
@@ -1091,12 +1097,12 @@ function setupScanControls(){
     const zMin=caps.zoom.min||1;
     const zMax=Math.min(caps.zoom.max||8,8);
     sl.min=zMin; sl.max=zMax; sl.step=caps.zoom.step||0.1;
-    // Start at 2× (or max if lower) — fills frame better for badge-distance QR codes
-    const zStart=Math.min(2.0, zMax);
-    sl.value=zStart;
-    document.getElementById('zoom-lbl').textContent=zStart.toFixed(1)+'×';
+    // Zoom already applied in startScan — just sync the slider UI
+    const zCur=track.getSettings?.().zoom||Math.min(2.0,zMax);
+    sl.value=zCur;
+    document.getElementById('zoom-lbl').textContent=parseFloat(zCur).toFixed(1)+'×';
     document.getElementById('zoom-wrap').style.display='flex';
-    applyZoom(zStart); // apply immediately
+    // no applyZoom here — already done at camera start
   }
 }
 async function toggleTorch(){
