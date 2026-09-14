@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#1D4ED8"/>
+  <!-- Person icon -->
+  <circle cx="96" cy="72" r="26" fill="white"/>
+  <path d="M40 152 c0-30.9 25.1-56 56-56h0c30.9 0 56 25.1 56 56" fill="white"/>
+  <!-- QR corner marks -->
+  <rect x="28" y="28" width="16" height="16" rx="3" fill="white" opacity="0.6"/>
+  <rect x="148" y="28" width="16" height="16" rx="3" fill="white" opacity="0.6"/>
+  <rect x="28" y="148" width="16" height="16" rx="3" fill="white" opacity="0.6"/>
+</svg>

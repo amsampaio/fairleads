@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1D4ED8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FairLeads">
+<title>FairLeads</title>
+<link rel="manifest" href="manifest.json">
+<link rel="shortcut icon" href="icon.ico" type="image/x-icon">
+<!-- v8 -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{--p:#1D4ED8;--pl:#3B82F6;--pd:#1E3A8A;--bg:#F1F5F9;--t:#1E293B;--tm:#64748B;--br:#E2E8F0;--err:#EF4444;--ok:#10B981;--nh:64px;--hh:56px;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--t);min-height:100dvh;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+
+/* HEADER */
+.hdr{position:fixed;top:0;left:0;right:0;height:var(--hh);background:var(--p);color:#fff;display:flex;align-items:center;padding:0 8px;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.25);gap:4px;}
+.hdr-t{font-size:17px;font-weight:700;flex:1;padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hbtn{background:none;border:none;color:#fff;width:42px;height:42px;border-radius:10px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;}
+.hbtn:active{background:rgba(255,255,255,.2);}
+.sdot{width:9px;height:9px;border-radius:50%;background:#6EE7B7;flex-shrink:0;cursor:default;}
+.sdot.syncing{background:#FCD34D;animation:pulse 1s infinite;}
+.sdot.err{background:var(--err);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* MAIN */
+.main{margin-top:var(--hh);padding-bottom:calc(var(--nh)+8px);min-height:calc(100dvh - var(--hh));}
+.vp{padding:14px;}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nh);background:#fff;border-top:1px solid var(--br);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--tm);padding:6px 0;}
+.ni.on{color:var(--p);}
+.ni svg{width:22px;height:22px;}
+.ni span{font-size:10px;font-weight:500;}
+
+/* VIEWS */
+.view{display:none;}.view.on{display:block;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.stat{background:#fff;border:1px solid var(--br);border-radius:12px;padding:10px 6px;text-align:center;}
+.stn{font-size:22px;font-weight:800;color:var(--p);}
+.stl{font-size:10px;color:var(--tm);margin-top:1px;}
+
+/* SEARCH */
+.sbar{position:relative;margin-bottom:10px;}
+.sbar input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--br);border-radius:12px;font-size:15px;background:#fff;outline:none;color:var(--t);}
+.sbar input:focus{border-color:var(--pl);}
+.si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:16px;}
+
+/* CHIPS */
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--br);background:#fff;cursor:pointer;white-space:nowrap;color:var(--tm);flex-shrink:0;}
+.chip.on{background:var(--p);color:#fff;border-color:var(--p);}
+
+/* LEAD CARDS */
+.lcard{background:#fff;border-radius:14px;border:1px solid var(--br);padding:13px 14px;margin-bottom:9px;cursor:pointer;}
+.lcard:active{box-shadow:0 3px 12px rgba(0,0,0,.12);}
+.lct{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.lcn{font-size:16px;font-weight:700;}
+.lcs{font-size:12px;color:var(--tm);margin-top:1px;}
+.lci{font-size:12px;color:var(--p);margin-top:3px;}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0;margin-top:2px;}
+.bp{background:#FEF3C7;color:#92400E;}
+.bcc{background:#DBEAFE;color:#1E40AF;}
+.bq{background:#D1FAE5;color:#065F46;}
+.bd{background:#F1F5F9;color:#64748B;}
+.lcm{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px;}
+.lcmi{font-size:11px;color:var(--tm);}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--tm);}
+.empty .ei{font-size:52px;margin-bottom:12px;}
+.empty h3{font-size:18px;color:var(--t);margin-bottom:7px;}
+.empty p{font-size:14px;line-height:1.55;}
+
+/* SCAN VIEW */
+.scanwrap{display:flex;flex-direction:column;align-items:center;padding:16px;gap:14px;}
+.cambox{width:100%;max-width:380px;aspect-ratio:1;background:#111;border-radius:18px;overflow:hidden;position:relative;}
+#qr-video{width:100%;height:100%;object-fit:cover;display:block;}
+.camov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.camfr{width:190px;height:190px;border:2.5px solid #fff;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative;}
+.camln{position:absolute;left:-2px;right:-2px;height:2px;background:#60A5FA;border-radius:2px;animation:scan 2s linear infinite;}
+@keyframes scan{0%{top:0}100%{top:calc(100% - 2px)}}
+canvas#qr-cv{display:none;}
+.scan-msg{background:#fff;border:1px solid var(--br);border-radius:12px;padding:11px 16px;font-size:14px;color:var(--t);width:100%;max-width:380px;text-align:center;}
+.scan-err{background:#FEF2F2;border-color:#FECACA;color:var(--err);}
+/* LANGUAGE SELECTOR */
+.lang-btns{display:flex;gap:8px;margin-bottom:4px;}
+.btn-lang{padding:7px 16px;border:2px solid var(--br);border-radius:10px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--t);}
+.btn-lang.on{border-color:var(--p);background:var(--p);color:#fff;}
+.scan-ctrls{display:flex;align-items:center;gap:10px;width:100%;max-width:380px;}
+.btn-torch{background:#1e293b;border:none;border-radius:10px;padding:9px 15px;font-size:20px;cursor:pointer;flex-shrink:0;transition:background .2s;line-height:1;}
+.btn-torch.on{background:#FCD34D;}
+.zoom-wrap{display:flex;align-items:center;gap:8px;flex:1;}
+.zoom-slider{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:#d1d5db;border-radius:2px;outline:none;}
+.zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--p);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);}
+.zoom-lbl{font-size:12px;min-width:32px;text-align:right;color:var(--tm);}
+
+/* FORM */
+.fsec{margin-bottom:20px;}
+.fst{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px;}
+.fg{margin-bottom:11px;}
+.fl{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--tm);margin-bottom:3px;}
+.fi{width:100%;padding:11px 13px;border:1.5px solid var(--br);border-radius:10px;font-size:15px;color:var(--t);outline:none;background:#fff;-webkit-appearance:none;}
+.fi:focus{border-color:var(--pl);}
+textarea.fi{resize:vertical;min-height:80px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* PRODUCT SUGGESTION DROPDOWN */
+.prod-wrap{position:relative;}
+.sugg-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--pl);border-top:none;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:60;display:none;box-shadow:0 6px 16px rgba(0,0,0,.12);}
+.sugg-item{padding:10px 13px;font-size:14px;cursor:pointer;color:var(--t);}
+.sugg-item:hover,.sugg-item:active{background:var(--bg);}
+.sugg-item.sep{font-size:11px;color:var(--tm);padding:6px 13px;background:var(--bg);cursor:default;font-weight:600;}
+
+/* MIC BUTTON */
+.mic-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:2px 6px;border-radius:6px;color:var(--tm);line-height:1;transition:color .2s;}
+.mic-btn.on{color:var(--err);animation:pulse 1s infinite;}
+
+/* BUTTONS */
+.btn{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-p{background:var(--p);color:#fff;}
+.btn-p:active{background:var(--pd);}
+.btn-o{background:#fff;color:var(--t);border:1.5px solid var(--br);}
+.btn-d{background:#fff;color:var(--err);border:1.5px solid var(--err);}
+.brow{display:flex;gap:10px;}
+.brow .btn{flex:1;}
+
+/* DETAIL */
+.dhero{display:flex;align-items:center;gap:12px;background:#fff;padding:16px;border-radius:14px;border:1px solid var(--br);margin-bottom:12px;}
+.dav{width:50px;height:50px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0;}
+.davn{font-size:18px;font-weight:800;}
+.davs{font-size:13px;color:var(--tm);margin-top:2px;}
+.dcard{background:#fff;border:1px solid var(--br);border-radius:12px;padding:4px 12px;margin-bottom:12px;}
+.drow{display:flex;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--br);gap:12px;}
+.drow:last-child{border-bottom:none;}
+.dic{font-size:16px;flex-shrink:0;width:24px;}
+.dlbl{font-size:11px;color:var(--tm);margin-bottom:1px;}
+.dval{font-size:14px;color:var(--t);}
+a.dval{color:var(--p);text-decoration:none;}
+
+/* MODAL */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;}
+.mov.on{display:flex;}
+.modal{background:#fff;border-radius:22px 22px 0 0;padding:24px 20px;width:100%;max-height:90vh;overflow-y:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.modal-t{font-size:18px;font-weight:800;margin-bottom:18px;}
+
+/* PIN */
+.pin-box{display:flex;gap:14px;justify-content:center;margin:20px 0;}
+.pin-d{width:52px;height:60px;border:2px solid var(--br);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;transition:border-color .15s;}
+.pin-d::after{content:'';width:18px;height:18px;border-radius:50%;background:var(--br);transition:background .12s;}
+.pin-d.filled::after{background:var(--p);}
+.pin-d.active{border-color:var(--p);}
+
+/* OCR ZONES */
+.ocr-zone{position:absolute;border-radius:4px;cursor:pointer;touch-action:none;box-sizing:border-box;transition:box-shadow .15s;}
+.ocr-zone:active{box-shadow:0 0 0 3px rgba(0,0,0,.3);}
+.ocr-lbl{position:absolute;top:3px;left:4px;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;letter-spacing:.3px;}
+#ocr-popup{position:absolute;background:#fff;border:1.5px solid var(--br);border-radius:12px;padding:10px 12px;z-index:30;display:none;box-shadow:0 6px 20px rgba(0,0,0,.18);min-width:170px;}
+/* CROP MASK */
+#crop-overlay{position:absolute;inset:0;pointer-events:none;z-index:10;}
+#crop-rect{position:absolute;box-shadow:0 0 0 9999px rgba(0,0,0,.6);border:2.5px solid #fff;border-radius:3px;pointer-events:auto;touch-action:none;cursor:move;}
+.crop-h{position:absolute;width:22px;height:22px;background:#fff;border-radius:3px;touch-action:none;z-index:2;}
+.crop-h[data-c='tl']{top:-6px;left:-6px;cursor:nwse-resize;}
+.crop-h[data-c='tr']{top:-6px;right:-6px;cursor:nesw-resize;}
+.crop-h[data-c='bl']{bottom:-6px;left:-6px;cursor:nesw-resize;}
+.crop-h[data-c='br']{bottom:-6px;right:-6px;cursor:nwse-resize;}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--nh)+18px);left:50%;transform:translateX(-50%) translateY(16px);background:#1E293B;color:#fff;padding:10px 22px;border-radius:28px;font-size:14px;font-weight:600;opacity:0;transition:all .25s;z-index:400;white-space:nowrap;pointer-events:none;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr" id="hdr">
+  <button class="hbtn" id="hbk" style="display:none" onclick="goBack()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><polyline points="15,18 9,12 15,6"/></svg>
+  </button>
+  <img src="icon.ico" alt="" style="width:30px;height:30px;border-radius:7px;flex-shrink:0;object-fit:cover;">
+  <span class="hdr-t" id="hdrt">FairLeads</span>
+  <div id="sdot" class="sdot" style="display:none" title="GitHub sync"></div>
+  <button class="hbtn" id="hset" onclick="settingsClick()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  </button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- HOME -->
+  <div class="view on vp" id="v-home">
+    <div class="stats" id="stats"></div>
+    <div class="sbar">
+      <span class="si">🔍</span>
+      <input type="search" id="search" data-i18n-ph="search_ph" placeholder="Pesquisar leads…" oninput="renderLeads()" autocomplete="off">
+    </div>
+    <div class="chips">
+      <button class="chip on" onclick="setF('all',this)" data-i18n="chip_all">Todos</button>
+      <button class="chip"    onclick="setF('pendente',this)" data-i18n="s_pendente">⏳ Pendente</button>
+      <button class="chip"    onclick="setF('contactado',this)" data-i18n="s_contactado">📞 Contactado</button>
+      <button class="chip"    onclick="setF('qualificado',this)" data-i18n="s_qualificado">✅ Qualificado</button>
+      <button class="chip"    onclick="setF('descartado',this)" data-i18n="s_descartado">❌ Descartado</button>
+    </div>
+    <div id="llist"></div>
+  </div>
+
+  <!-- SCAN — câmara abre automaticamente -->
+  <div class="view" id="v-scan">
+    <div class="scanwrap">
+      <div class="cambox" id="cambox">
+        <video id="qr-video" autoplay playsinline muted></video>
+        <canvas id="qr-cv"></canvas>
+        <div class="camov"><div class="camfr"><div class="camln"></div></div></div>
+      </div>
+      <div class="scan-ctrls" id="scan-ctrls" style="display:none">
+        <button class="btn-torch" id="btn-torch" onclick="toggleTorch()" title="Flash">🔦</button>
+        <div class="zoom-wrap" id="zoom-wrap" style="display:none">
+          <span style="font-size:14px">🔍</span>
+          <input type="range" id="zoom-slider" class="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="applyZoom(this.value)">
+          <span class="zoom-lbl" id="zoom-lbl">1×</span>
+        </div>
+      </div>
+      <div class="scan-msg" id="scan-msg" data-i18n="scan_starting">A iniciar câmara…</div>
+      <button class="btn btn-o" style="max-width:320px;margin-top:4px" onclick="prepareNew();showView('form')" data-i18n="scan_manual">
+        ✏️ Adicionar manualmente
+      </button>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="view vp" id="v-form">
+    <form id="lform" onsubmit="saveLead(event)">
+
+      <div class="fsec">
+        <div class="fst" data-i18n="sec_contact">👤 Contacto</div>
+        <div class="fg">
+          <label class="fl"><span data-i18n="f_fullname">Nome completo *</span></label>
+          <input class="fi" type="text" id="f-nome" data-i18n-ph="ph_name" placeholder="João Silva" required>
+        </div>
+        <div class="fg">
+          <label class="fl"><span data-i18n="f_email_lbl">Email</span></label>
+          <input class="fi" type="email" id="f-email" data-i18n-ph="ph_email" placeholder="nome.apelido@empresa.com" inputmode="email" autocomplete="email">
+        </div>
+        <div class="fg">
+          <label class="fl"><span data-i18n="f_phone_lbl">Telefone</span></label>
+          <input class="fi" type="tel" id="f-tel" data-i18n-ph="ph_phone" placeholder="+351 91 234 5678" autocomplete="tel">
+        </div>
+      </div>
+
+      <div class="fsec">
+        <div class="fst" data-i18n="sec_company">🏢 Empresa</div>
+        <div class="fg">
+          <label class="fl"><span data-i18n="f_company_lbl">Empresa</span></label>
+          <input class="fi" type="text" id="f-emp" data-i18n-ph="ph_company" placeholder="Nome da empresa">
+        </div>
+        <div class="fg">
+          <label class="fl"><span data-i18n="f_role_lbl">Cargo</span></label>
+          <input class="fi" type="text" id="f-cargo" data-i18n-ph="ph_role" placeholder="Director Comercial">
+        </div>
+      </div>
+
+      <div class="fsec">
+        <div class="fst" data-i18n="sec_interest">🎯 Interesse</div>
+        <div class="fg">
+          <label class="fl">
+            <span data-i18n="f_product_lbl">Produto / Serviço</span>
+            <button type="button" class="mic-btn" id="mic-int" onclick="toggleVoice('f-int','mic-int')">🎤</button>
+          </label>
+          <div class="prod-wrap">
+            <input class="fi" type="text" id="f-int"
+              data-i18n-ph="ph_product" placeholder="Seleciona ou escreve, separa por vírgulas…"
+              oninput="onProdInput()" onfocus="onProdInput()" autocomplete="off">
+            <div class="sugg-drop" id="sugg-drop"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">
+            <span data-i18n="f_notes_lbl">Notas</span>
+            <button type="button" class="mic-btn" id="mic-notas" onclick="toggleVoice('f-notas','mic-notas')">🎤</button>
+          </label>
+          <textarea class="fi" id="f-notas" data-i18n-ph="ph_notes" placeholder="Observações da conversa…"></textarea>
+        </div>
+      </div>
+
+      <div class="fsec">
+        <div class="fst" data-i18n="sec_followup">📋 Follow-up</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl"><span data-i18n="f_status_lbl">Estado</span></label>
+            <select class="fi" id="f-est">
+              <option value="pendente" data-i18n="s_pendente">⏳ Pendente</option>
+              <option value="contactado" data-i18n="s_contactado">📞 Contactado</option>
+              <option value="qualificado" data-i18n="s_qualificado">✅ Qualificado</option>
+              <option value="descartado" data-i18n="s_descartado">❌ Descartado</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl"><span data-i18n="f_date_lbl">Data</span></label>
+            <input class="fi" type="date" id="f-date">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-p" data-i18n="f_save">💾 Guardar Lead</button>
+      <div style="height:12px"></div>
+    </form>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="view vp" id="v-detail">
+    <div id="dbody"></div>
+  </div>
+
+  <!-- OCR — cartão de contacto -->
+  <div class="view" id="v-ocr" style="overflow-y:auto;padding-bottom:20px;">
+
+    <!-- FASE 1: captura -->
+    <div id="ocp-capture" class="scanwrap">
+      <div class="scan-msg" data-i18n="ocr_prompt">📸 Fotografa o cartão de contacto</div>
+      <input type="file" id="ocr-file" accept="image/*" capture="environment" style="display:none" onchange="doOCR(this)">
+      <button type="button" class="btn btn-p" style="max-width:320px" data-i18n="ocr_camera"
+        onclick="document.getElementById('ocr-file').setAttribute('capture','environment');document.getElementById('ocr-file').click()">
+        📸 Fotografar com câmara
+      </button>
+      <button type="button" class="btn btn-o" style="max-width:320px" data-i18n="ocr_gallery"
+        onclick="document.getElementById('ocr-file').removeAttribute('capture');document.getElementById('ocr-file').click()">
+        🖼️ Escolher da galeria
+      </button>
+      <button type="button" class="btn btn-o" style="max-width:320px" data-i18n="scan_manual" onclick="prepareNew();showView('form')">
+        ✏️ Adicionar manualmente
+      </button>
+    </div>
+
+    <!-- IMAGEM (partilhada entre todas as fases) -->
+    <div id="ocp-imgwrap" style="display:none;padding:14px 14px 0;">
+      <div id="ocp-imgcont" style="position:relative;border-radius:14px;overflow:hidden;line-height:0;">
+        <img id="ocr-img" style="width:100%;display:block;border-radius:14px;">
+        <!-- máscara de corte (fase 1b) -->
+        <div id="crop-overlay" style="display:none">
+          <div id="crop-rect">
+            <div class="crop-h" data-c="tl"></div>
+            <div class="crop-h" data-c="tr"></div>
+            <div class="crop-h" data-c="bl"></div>
+            <div class="crop-h" data-c="br"></div>
+          </div>
+        </div>
+        <!-- retângulos de zona injetados aqui pelo JS -->
+        <div id="ocr-popup">
+          <p style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:6px" data-i18n="ocr_popup_title">Atribuir campo:</p>
+          <select id="ocr-popup-sel" class="fi" style="padding:7px 10px;font-size:13px" onchange="changeZoneField(this.value)">
+            <option value="nome" data-i18n="field_nome">👤 Nome</option>
+            <option value="emp" data-i18n="field_emp">🏢 Empresa</option>
+            <option value="cargo" data-i18n="field_cargo">💼 Cargo</option>
+            <option value="email" data-i18n="field_email">✉️ Email</option>
+            <option value="tel" data-i18n="field_tel">📞 Telefone</option>
+            <option value="nt1" data-i18n="field_nt1">📝 Notas — linha 1</option>
+            <option value="nt2" data-i18n="field_nt2">📝 Notas — linha 2</option>
+            <option value="nt3" data-i18n="field_nt3">📝 Notas — linha 3</option>
+            <option value="ignore" data-i18n="field_ignore">✕ Ignorar</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 1b: ajuste do corte -->
+    <div id="ocp-crop" style="display:none;padding:8px 14px 0;">
+      <p style="font-size:13px;color:var(--tm);margin-bottom:10px;text-align:center;line-height:1.5" data-i18n="ocr_crop_hint">
+        ✂️ Ajusta o rectângulo aos limites do cartão
+      </p>
+      <div class="brow">
+        <button type="button" class="btn btn-o" onclick="retakePhoto()" data-i18n="ocr_retake">🔄 Nova foto</button>
+        <button type="button" class="btn btn-p" onclick="cropAndOCR()" data-i18n="ocr_crop_btn">✂️ Recortar &amp; Analisar</button>
+      </div>
+    </div>
+
+    <!-- FASE 2: progresso OCR -->
+    <div id="ocp-proc" style="display:none;padding:10px 14px;">
+      <div class="scan-msg" id="ocr-msg">⏳ A iniciar…</div>
+      <div style="background:var(--br);border-radius:8px;height:8px;margin-top:8px;">
+        <div id="ocr-bar" style="height:100%;background:var(--p);border-radius:8px;width:0%;transition:width .4s;"></div>
+      </div>
+    </div>
+
+    <!-- FASE 3: revisão de zonas -->
+    <div id="ocp-review" style="display:none;padding:10px 14px 0;">
+      <p style="font-size:13px;color:var(--tm);margin-bottom:12px;line-height:1.55;text-align:center" data-i18n-html="ocr_review_hint">
+        🎨 <strong>Toca</strong> num retângulo para mudar o campo &nbsp;·&nbsp; <strong>Arrasta</strong> para reposicionar
+      </p>
+      <div class="brow">
+        <button type="button" class="btn btn-o" onclick="retakePhoto()" data-i18n="ocr_retake">🔄 Nova foto</button>
+        <button type="button" class="btn btn-p" onclick="confirmOCR()" data-i18n="ocr_confirm">✅ Confirmar</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="ni on" id="n-home" onclick="showView('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    <span data-i18n="nav_leads">Leads</span>
+  </button>
+  <button class="ni" id="n-scan" onclick="showView('scan')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/>
+      <rect x="3" y="16" width="5" height="5" rx="1"/>
+      <path d="M16 16h2v2h-2zm3 0h2v2h-2zm-3 3h2v2h-2zm3 0h2v2h-2zm-3-6h2v2h-2z"/>
+    </svg>
+    <span data-i18n="nav_scan">Scan QR</span>
+  </button>
+  <button class="ni" id="n-form" onclick="prepareNew();showView('form')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span data-i18n="nav_new">Novo</span>
+  </button>
+  <button class="ni" id="n-ocr" onclick="showView('ocr')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="6" width="20" height="13" rx="2"/>
+      <line x1="6" y1="11" x2="15" y2="11"/><line x1="6" y1="14.5" x2="11" y2="14.5"/>
+      <circle cx="19" cy="11" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+    <span data-i18n="nav_card">Cartão</span>
+  </button>
+</nav>
+
+<!-- PIN MODAL -->
+<div class="mov" id="m-pin" onclick="closeMov(event,'m-pin')">
+  <div class="modal">
+    <div class="modal-t" data-i18n="pin_title">🔐 PIN de Acesso</div>
+    <p style="font-size:14px;color:var(--tm);margin-bottom:16px" data-i18n="pin_hint">Introduz o PIN para aceder às definições</p>
+    <!-- Visual dot indicators — the actual input is hidden -->
+    <div class="pin-box" onclick="document.getElementById('pin-hidden').focus()" style="cursor:pointer">
+      <div class="pin-d" id="pd0"></div>
+      <div class="pin-d" id="pd1"></div>
+      <div class="pin-d" id="pd2"></div>
+      <div class="pin-d" id="pd3"></div>
+    </div>
+    <!-- Single hidden input collects keystrokes — opacity:0, size 0, no caret -->
+    <input id="pin-hidden" type="tel" inputmode="numeric" maxlength="4" autocomplete="off"
+      style="position:absolute;opacity:0;width:1px;height:1px;border:none;outline:none;caret-color:transparent;"
+      oninput="pinHiddenInput()" onkeydown="pinHiddenKey(event)">
+    <p id="pin-err" style="color:var(--err);font-size:13px;text-align:center;display:none;margin-bottom:8px" data-i18n="pin_error">PIN incorreto. Tenta novamente.</p>
+    <button class="btn btn-o" onclick="closeMov(null,'m-pin',true)" data-i18n="pin_cancel">Cancelar</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="mov" id="m-set" onclick="closeMov(event,'m-set')">
+  <div class="modal">
+    <div class="modal-t" data-i18n="set_title">⚙️ Definições</div>
+
+    <div class="fst" data-i18n="set_lang_sec" style="margin-bottom:8px">🌐 Idioma</div>
+    <div class="lang-btns">
+      <button class="btn-lang on" data-lang="pt" onclick="setLang('pt')">🇵🇹 PT</button>
+      <button class="btn-lang" data-lang="en" onclick="setLang('en')">🇬🇧 EN</button>
+      <button class="btn-lang" data-lang="es" onclick="setLang('es')">🇪🇸 ES</button>
+    </div>
+
+    <div class="fst" data-i18n="set_user_sec" style="margin-top:16px">👤 Utilizador</div>
+    <div class="fg">
+      <label class="fl"><span data-i18n="set_user_lbl">O teu nome (guardado em cada lead)</span></label>
+      <input class="fi" type="text" id="si-user" data-i18n-ph="set_user_ph" placeholder="Ex: Ana Santos">
+    </div>
+
+    <div class="fst" data-i18n="set_fair_sec" style="margin-top:16px">🏟️ Feira</div>
+    <div class="fg">
+      <label class="fl"><span data-i18n="set_fair_lbl">Nome da Feira</span></label>
+      <input class="fi" type="text" id="si-fair" data-i18n-ph="set_fair_ph" placeholder="Ex: Alimentaria 2026">
+    </div>
+
+    <div class="fst" data-i18n="set_prods_sec" style="margin-top:16px">🎯 Produtos sugeridos</div>
+    <div class="fg">
+      <label class="fl"><span data-i18n="set_prods_lbl">Um produto por linha</span></label>
+      <div class="lang-btns" style="margin-bottom:6px">
+        <button class="btn-lang on" data-plang="pt" onclick="switchProdsLang('pt',this)" type="button">🇵🇹 PT</button>
+        <button class="btn-lang" data-plang="en" onclick="switchProdsLang('en',this)" type="button">🇬🇧 EN</button>
+        <button class="btn-lang" data-plang="es" onclick="switchProdsLang('es',this)" type="button">🇪🇸 ES</button>
+      </div>
+      <textarea class="fi" id="si-prods" style="min-height:110px" data-i18n-ph="set_prods_ph" placeholder="Produto A&#10;Produto B&#10;Serviço Premium C"></textarea>
+    </div>
+
+    <div class="fst" data-i18n="set_pin_sec" style="margin-top:16px">🔐 PIN de Segurança</div>
+    <p style="font-size:12px;color:var(--tm);margin-bottom:8px" data-i18n="set_pin_hint">Deixa em branco para não alterar o PIN atual. Para remover o PIN, coloca "0000".</p>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg">
+        <label class="fl"><span data-i18n="set_pin_new">Novo PIN (4 dígitos)</span></label>
+        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin" placeholder="••••" autocomplete="new-password">
+      </div>
+      <div class="fg">
+        <label class="fl"><span data-i18n="set_pin_confirm">Confirmar PIN</span></label>
+        <input class="fi" type="password" inputmode="numeric" maxlength="4" id="si-pin2" placeholder="••••" autocomplete="new-password">
+      </div>
+    </div>
+
+    <div class="fst" data-i18n="set_sync_sec" style="margin-top:4px">🐙 Sync GitHub</div>
+    <p style="font-size:12px;color:var(--tm);margin-bottom:10px;line-height:1.6" data-i18n-html="set_sync_hint">
+      1. Cria um Gist em <strong>gist.github.com</strong><br>
+      2. Em <strong>Settings → Developer Settings → Tokens (classic)</strong>, gera um token com escopo <em>gist</em><br>
+      3. Cola o token e o ID do Gist aqui. Os leads guardam-se automaticamente e o nome da feira é partilhado entre dispositivos.
+    </p>
+    <div class="fg">
+      <label class="fl"><span data-i18n="set_token_lbl">GitHub Token</span></label>
+      <input class="fi" type="password" id="si-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label class="fl"><span data-i18n="set_gist_lbl">Gist ID</span></label>
+      <input class="fi" type="text" id="si-gist" placeholder="abc123def456…" autocomplete="off">
+    </div>
+    <button type="button" class="btn btn-o" id="btn-test-sync" style="margin-bottom:10px" onclick="testSync(this)" data-i18n="set_test_sync">🔁 Testar Sincronização</button>
+
+    <button class="btn btn-p" onclick="saveSettings()" data-i18n="set_save">💾 Guardar Definições</button>
+
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--br)">
+      <p style="font-size:12px;color:var(--tm);margin-bottom:6px" data-i18n="set_admin_sec">👑 Administrador</p>
+      <p style="font-size:11px;color:var(--tm);margin-bottom:10px;line-height:1.5" data-i18n="set_admin_hint">Carrega todos os leads de todos os collectors do Gist. Ao fechar e reabrir a app volta a ver apenas os teus leads.</p>
+      <button class="btn btn-o" onclick="loadAllLeads(this)" id="btn-load-all" data-i18n="set_load_all">📥 Ver todos os leads da feira</button>
+    </div>
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">
+      <p style="font-size:12px;color:var(--tm);margin-bottom:10px" data-i18n="set_export_sec">📤 Exportar dados</p>
+      <button class="btn btn-o" onclick="exportCSV()" data-i18n="set_export_btn">⬇️ Exportar Leads (CSV)</button>
+    </div>
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">
+      <p style="font-size:12px;color:var(--tm);margin-bottom:10px" data-i18n="set_danger_sec">⚠️ Zona de perigo</p>
+      <button class="btn btn-d" onclick="clearAll()" data-i18n="set_clear">🗑️ Apagar todos os leads locais</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+/* ══════════════════════════════════════
+   DATA
+══════════════════════════════════════ */
+const KEY = 'fl_v2';
+let D = { fair:'Feira', user:'', cfg:{pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]}, leads:[] };
+let adminMode=false, adminLeads=[];  // resets on page reload — never persisted
+let curV='home', editId=null, flt='all';
+let scanning=false, stream=null, raf=null;
+let torchOn=false, torchAuto=true, brightFrames=0, zoomCap=null, pinchDist0=null, pinchZoom0=1;
+let recog=null;
+
+function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},p.cfg||{});}}catch(e){}}
+function save(){localStorage.setItem(KEY,JSON.stringify(D));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+/* ══════════════════════════════════════
+   I18N
+══════════════════════════════════════ */
+const LANGS = {
+  pt:{
+    // Nav
+    nav_leads:'Leads', nav_scan:'Scan', nav_new:'Novo', nav_card:'Cartão',
+    // Home
+    search_ph:'Pesquisar leads…',
+    chip_all:'Todos',
+    s_pendente:'Pendente', s_contactado:'Contactado', s_qualificado:'Qualificado', s_descartado:'Descartado',
+    stat_total:'leads', stat_today:'hoje',
+    // Scan
+    scan_starting:'A iniciar câmara…', scan_prompt:'📷 Aponta para um QR Code…',
+    scan_manual:'✍️ Introduzir manualmente',
+    torch_off:'Sem flash neste dispositivo',
+    // Form
+    sec_contact:'👤 Contacto', sec_company:'🏢 Empresa', sec_interest:'🎯 Interesse', sec_followup:'📅 Follow-up',
+    f_fullname:'Nome completo', f_email_lbl:'Email', f_phone_lbl:'Telefone',
+    f_company_lbl:'Empresa', f_role_lbl:'Cargo',
+    f_product_lbl:'Produto de interesse', f_notes_lbl:'Notas', f_status_lbl:'Estado', f_date_lbl:'Data follow-up',
+    ph_name:'Ex: João Silva', ph_email:'joao@empresa.com', ph_phone:'+351 9xx xxx xxx',
+    ph_company:'Nome da empresa', ph_role:'Diretor, Gestor…', ph_product:'', ph_notes:'Observações relevantes…',
+    f_save:'💾 Guardar Lead',
+    // Detail
+    det_edit:'✏️ Editar', det_delete:'🗑️ Apagar', det_back:'← Voltar',
+    det_confirm_del:'Apagar este lead?',
+    // OCR
+    ocr_prompt:'Fotografa o cartão de visita para preencher automaticamente',
+    ocr_camera:'📷 Câmara', ocr_gallery:'🖼️ Galeria',
+    ocr_crop_hint:'Arrasta para ajustar • toca duas vezes para confirmar',
+    ocr_retake:'↩️ Nova foto', ocr_crop_btn:'✂️ Recortar',
+    ocr_review_hint:'Toca num campo para o associar ao texto extraído. Campos em <strong>verde</strong> já foram preenchidos.',
+    ocr_confirm:'✅ Confirmar e preencher formulário',
+    ocr_popup_title:'Associar campo',
+    field_nome:'Nome', field_emp:'Empresa', field_cargo:'Cargo',
+    field_email:'Email', field_tel:'Telefone',
+    field_nt1:'Nota 1', field_nt2:'Nota 2', field_nt3:'Nota 3', field_ignore:'Ignorar',
+    // PIN modal
+    pin_title:'🔐 PIN de Acesso', pin_hint:'Introduz o PIN para aceder às definições',
+    pin_error:'PIN incorreto. Tenta novamente.', pin_cancel:'Cancelar',
+    // Settings
+    set_title:'⚙️ Definições', set_lang_sec:'🌐 Idioma',
+    set_user_sec:'👤 Utilizador', set_user_lbl:'O teu nome (guardado em cada lead)', set_user_ph:'Ex: Ana Santos',
+    set_fair_sec:'🏟️ Feira', set_fair_lbl:'Nome da Feira', set_fair_ph:'Ex: Alimentaria 2026',
+    set_prods_sec:'🎯 Produtos sugeridos', set_prods_lbl:'Um produto por linha', set_prods_ph:'Produto A\nProduto B\nServiço Premium C',
+    set_pin_sec:'🔐 PIN de Segurança',
+    set_pin_hint:'Deixa em branco para não alterar o PIN atual. Para remover o PIN, coloca "0000".',
+    set_pin_new:'Novo PIN (4 dígitos)', set_pin_confirm:'Confirmar PIN',
+    set_sync_sec:'🐙 Sync GitHub',
+    set_sync_hint:'1. Cria um Gist em <strong>gist.github.com</strong><br>2. Em <strong>Settings → Developer Settings → Tokens (classic)</strong>, gera um token com escopo <em>gist</em><br>3. Cola o token e o ID do Gist aqui. Os leads guardam-se automaticamente e o nome da feira é partilhado entre dispositivos.',
+    set_token_lbl:'GitHub Token', set_gist_lbl:'Gist ID',
+    set_test_sync:'🔁 Testar Sincronização', set_save:'💾 Guardar Definições',
+    set_admin_sec:'👑 Administrador',
+    set_admin_hint:'Carrega todos os leads de todos os collectors do Gist. Ao fechar e reabrir a app volta a ver apenas os teus leads.',
+    set_load_all:'📥 Ver todos os leads da feira',
+    set_export_sec:'📤 Exportar dados', set_export_btn:'⬇️ Exportar Leads (CSV)',
+    set_danger_sec:'⚠️ Zona de perigo', set_clear:'🗑️ Apagar todos os leads locais',
+    // Toasts / alerts
+    toast_saved:'Definições guardadas',
+    toast_pin_mismatch:'Os PINs não coincidem',
+    toast_pin_short:'O PIN deve ter 4 dígitos',
+    toast_pin_removed:'PIN removido',
+    toast_sync_ok:'Sincronização OK ✓',
+    toast_sync_fail:'Erro na sincronização',
+    toast_leads_pushed:'Leads enviados',
+    toast_leads_pulled:'{n} lead(s) importado(s) do GitHub',
+    toast_exported:'CSV exportado',
+    toast_cleared:'Todos os leads apagados',
+    toast_no_gist:'Configura o Gist primeiro',
+    toast_torch_na:'Flash não disponível neste dispositivo',
+    alert_clear:'Apagar TODOS os leads locais? Esta ação não pode ser desfeita.',
+    confirm_del:'Apagar este lead?',
+    alert_pin_wrong:'PIN incorreto',
+    // QR / lead
+    qr_new_lead:'Novo lead de QR', qr_found:'QR lido',
+    lead_by:'por', lead_at:'em',
+    // Load all
+    load_all_ok:'{n} leads carregados de {u} utilizador(es)',
+    load_all_none:'Nenhum lead adicional encontrado',
+    load_all_no_gist:'Configura o Gist primeiro',
+    empty_none:'Sem leads ainda', empty_filter:'Sem resultados',
+    empty_filter_hint:'Ajusta os filtros ou a pesquisa.',
+    empty_gist_hint:'Configura o <strong>GitHub Gist</strong> nas ⚙️ Definições para sincronizar leads entre dispositivos. Depois usa o scanner QR ou adiciona manualmente.',
+    empty_start_hint:'Usa o scanner QR ou adiciona o primeiro contacto manualmente.',
+    slbl_pendente:'Pendente', slbl_contactado:'Contactado', slbl_qualificado:'Qualificado', slbl_descartado:'Descartado',
+    toast_lead_added:'Lead adicionado!', toast_lead_updated:'Lead atualizado!', toast_lead_deleted:'Lead apagado!',
+    toast_no_leads_export:'Sem leads para exportar!',
+    set_sync_fill:'Preenche o Token e o Gist ID antes de testar.',
+    sync_pulled_fair:'nome da feira', sync_pulled_prods:'produtos',
+    sync_ok_pulled:'Funcionou! Importado: {items}.', sync_ok_empty:'Funcionou! Sem configuração anterior no Gist.',
+    sync_err_token:'Token inválido ou sem permissão "gist".', sync_err_404:'Gist ID não encontrado. Confirma o ID.',
+    sync_err_422:'Gist ID inválido (erro 422).', sync_err_net:'Erro de rede',
+    dictate_na:'🎤 Ditado não suportado neste browser',
+    dictate_listening:'🎤 A ouvir… (toca no microfone para parar)',
+    dictate_err:'🎤 Erro: {e}',
+    form_new_title:'Novo Lead', form_edit_title:'Editar Lead', det_title:'Detalhes',
+    sugg_label:'Sugestões'
+  },
+  en:{
+    nav_leads:'Leads', nav_scan:'Scan', nav_new:'New', nav_card:'Card',
+    search_ph:'Search leads…',
+    chip_all:'All',
+    s_pendente:'Pending', s_contactado:'Contacted', s_qualificado:'Qualified', s_descartado:'Discarded',
+    stat_total:'leads', stat_today:'today',
+    scan_starting:'Starting camera…', scan_prompt:'📷 Point at a QR Code…',
+    scan_manual:'✍️ Enter manually',
+    torch_off:'Flash not available on this device',
+    sec_contact:'👤 Contact', sec_company:'🏢 Company', sec_interest:'🎯 Interest', sec_followup:'📅 Follow-up',
+    f_fullname:'Full name', f_email_lbl:'Email', f_phone_lbl:'Phone',
+    f_company_lbl:'Company', f_role_lbl:'Role',
+    f_product_lbl:'Product of interest', f_notes_lbl:'Notes', f_status_lbl:'Status', f_date_lbl:'Follow-up date',
+    ph_name:'E.g.: John Smith', ph_email:'john@company.com', ph_phone:'+1 555 000 0000',
+    ph_company:'Company name', ph_role:'Director, Manager…', ph_product:'', ph_notes:'Relevant observations…',
+    f_save:'💾 Save Lead',
+    det_edit:'✏️ Edit', det_delete:'🗑️ Delete', det_back:'← Back',
+    det_confirm_del:'Delete this lead?',
+    ocr_prompt:'Take a photo of the business card to auto-fill',
+    ocr_camera:'📷 Camera', ocr_gallery:'🖼️ Gallery',
+    ocr_crop_hint:'Drag to adjust • double-tap to confirm',
+    ocr_retake:'↩️ Retake', ocr_crop_btn:'✂️ Crop',
+    ocr_review_hint:'Tap a field to assign it to the extracted text. Fields in <strong>green</strong> are already filled.',
+    ocr_confirm:'✅ Confirm and fill form',
+    ocr_popup_title:'Assign field',
+    field_nome:'Name', field_emp:'Company', field_cargo:'Role',
+    field_email:'Email', field_tel:'Phone',
+    field_nt1:'Note 1', field_nt2:'Note 2', field_nt3:'Note 3', field_ignore:'Ignore',
+    pin_title:'🔐 Access PIN', pin_hint:'Enter your PIN to access settings',
+    pin_error:'Incorrect PIN. Try again.', pin_cancel:'Cancel',
+    set_title:'⚙️ Settings', set_lang_sec:'🌐 Language',
+    set_user_sec:'👤 User', set_user_lbl:'Your name (saved with each lead)', set_user_ph:'E.g.: Anne Smith',
+    set_fair_sec:'🏟️ Fair', set_fair_lbl:'Fair name', set_fair_ph:'E.g.: FoodExpo 2026',
+    set_prods_sec:'🎯 Suggested products', set_prods_lbl:'One product per line', set_prods_ph:'Product A\nProduct B\nPremium Service C',
+    set_pin_sec:'🔐 Security PIN',
+    set_pin_hint:'Leave blank to keep the current PIN. To remove the PIN, enter "0000".',
+    set_pin_new:'New PIN (4 digits)', set_pin_confirm:'Confirm PIN',
+    set_sync_sec:'🐙 GitHub Sync',
+    set_sync_hint:'1. Create a Gist at <strong>gist.github.com</strong><br>2. Under <strong>Settings → Developer Settings → Tokens (classic)</strong>, generate a token with <em>gist</em> scope<br>3. Paste the token and Gist ID here. Leads are saved automatically and the fair name is shared across devices.',
+    set_token_lbl:'GitHub Token', set_gist_lbl:'Gist ID',
+    set_test_sync:'🔁 Test Sync', set_save:'💾 Save Settings',
+    set_admin_sec:'👑 Administrator',
+    set_admin_hint:'Loads all leads from all collectors in the Gist. Closing and reopening the app returns to your own leads only.',
+    set_load_all:'📥 View all fair leads',
+    set_export_sec:'📤 Export data', set_export_btn:'⬇️ Export Leads (CSV)',
+    set_danger_sec:'⚠️ Danger zone', set_clear:'🗑️ Delete all local leads',
+    toast_saved:'Settings saved',
+    toast_pin_mismatch:'PINs do not match',
+    toast_pin_short:'PIN must be 4 digits',
+    toast_pin_removed:'PIN removed',
+    toast_sync_ok:'Sync OK ✓',
+    toast_sync_fail:'Sync error',
+    toast_leads_pushed:'Leads pushed',
+    toast_leads_pulled:'{n} lead(s) imported from GitHub',
+    toast_exported:'CSV exported',
+    toast_cleared:'All leads deleted',
+    toast_no_gist:'Configure the Gist first',
+    toast_torch_na:'Flash not available on this device',
+    alert_clear:'Delete ALL local leads? This cannot be undone.',
+    confirm_del:'Delete this lead?',
+    alert_pin_wrong:'Incorrect PIN',
+    qr_new_lead:'New lead from QR', qr_found:'QR read',
+    lead_by:'by', lead_at:'at',
+    load_all_ok:'{n} leads loaded from {u} user(s)',
+    load_all_none:'No additional leads found',
+    load_all_no_gist:'Configure the Gist first',
+    empty_none:'No leads yet', empty_filter:'No results',
+    empty_filter_hint:'Adjust filters or search.',
+    empty_gist_hint:'Set up <strong>GitHub Gist</strong> in ⚙️ Settings to sync leads across devices. Then use the QR scanner or add manually.',
+    empty_start_hint:'Use the QR scanner or add your first contact manually.',
+    slbl_pendente:'Pending', slbl_contactado:'Contacted', slbl_qualificado:'Qualified', slbl_descartado:'Discarded',
+    toast_lead_added:'Lead added!', toast_lead_updated:'Lead updated!', toast_lead_deleted:'Lead deleted!',
+    toast_no_leads_export:'No leads to export!',
+    set_sync_fill:'Fill in the Token and Gist ID before testing.',
+    sync_pulled_fair:'fair name', sync_pulled_prods:'products',
+    sync_ok_pulled:'It works! Imported: {items}.', sync_ok_empty:'It works! No previous config in the Gist.',
+    sync_err_token:'Invalid token or missing "gist" permission.', sync_err_404:'Gist ID not found. Check the ID.',
+    sync_err_422:'Invalid Gist ID (error 422).', sync_err_net:'Network error',
+    dictate_na:'🎤 Dictation not supported in this browser',
+    dictate_listening:'🎤 Listening… (tap microphone to stop)',
+    dictate_err:'🎤 Error: {e}',
+    form_new_title:'New Lead', form_edit_title:'Edit Lead', det_title:'Details',
+    sugg_label:'Suggestions'
+  },
+  es:{
+    nav_leads:'Leads', nav_scan:'Scan', nav_new:'Nuevo', nav_card:'Tarjeta',
+    search_ph:'Buscar leads…',
+    chip_all:'Todos',
+    s_pendente:'Pendiente', s_contactado:'Contactado', s_qualificado:'Calificado', s_descartado:'Descartado',
+    stat_total:'leads', stat_today:'hoy',
+    scan_starting:'Iniciando cámara…', scan_prompt:'📷 Apunta a un código QR…',
+    scan_manual:'✍️ Introducir manualmente',
+    torch_off:'Flash no disponible en este dispositivo',
+    sec_contact:'👤 Contacto', sec_company:'🏢 Empresa', sec_interest:'🎯 Interés', sec_followup:'📅 Seguimiento',
+    f_fullname:'Nombre completo', f_email_lbl:'Email', f_phone_lbl:'Teléfono',
+    f_company_lbl:'Empresa', f_role_lbl:'Cargo',
+    f_product_lbl:'Producto de interés', f_notes_lbl:'Notas', f_status_lbl:'Estado', f_date_lbl:'Fecha seguimiento',
+    ph_name:'Ej: Juan García', ph_email:'juan@empresa.com', ph_phone:'+34 6xx xxx xxx',
+    ph_company:'Nombre de la empresa', ph_role:'Director, Gestor…', ph_product:'', ph_notes:'Observaciones relevantes…',
+    f_save:'💾 Guardar Lead',
+    det_edit:'✏️ Editar', det_delete:'🗑️ Eliminar', det_back:'← Volver',
+    det_confirm_del:'¿Eliminar este lead?',
+    ocr_prompt:'Fotografía la tarjeta de visita para rellenar automáticamente',
+    ocr_camera:'📷 Cámara', ocr_gallery:'🖼️ Galería',
+    ocr_crop_hint:'Arrastra para ajustar • toca dos veces para confirmar',
+    ocr_retake:'↩️ Nueva foto', ocr_crop_btn:'✂️ Recortar',
+    ocr_review_hint:'Toca un campo para asociarlo al texto extraído. Los campos en <strong>verde</strong> ya están rellenados.',
+    ocr_confirm:'✅ Confirmar y rellenar formulario',
+    ocr_popup_title:'Asignar campo',
+    field_nome:'Nombre', field_emp:'Empresa', field_cargo:'Cargo',
+    field_email:'Email', field_tel:'Teléfono',
+    field_nt1:'Nota 1', field_nt2:'Nota 2', field_nt3:'Nota 3', field_ignore:'Ignorar',
+    pin_title:'🔐 PIN de Acceso', pin_hint:'Introduce el PIN para acceder a la configuración',
+    pin_error:'PIN incorrecto. Inténtalo de nuevo.', pin_cancel:'Cancelar',
+    set_title:'⚙️ Configuración', set_lang_sec:'🌐 Idioma',
+    set_user_sec:'👤 Usuario', set_user_lbl:'Tu nombre (guardado en cada lead)', set_user_ph:'Ej: Ana Martínez',
+    set_fair_sec:'🏟️ Feria', set_fair_lbl:'Nombre de la Feria', set_fair_ph:'Ej: Alimentaria 2026',
+    set_prods_sec:'🎯 Productos sugeridos', set_prods_lbl:'Un producto por línea', set_prods_ph:'Producto A\nProducto B\nServicio Premium C',
+    set_pin_sec:'🔐 PIN de Seguridad',
+    set_pin_hint:'Deja en blanco para no cambiar el PIN actual. Para eliminar el PIN, escribe "0000".',
+    set_pin_new:'Nuevo PIN (4 dígitos)', set_pin_confirm:'Confirmar PIN',
+    set_sync_sec:'🐙 Sync GitHub',
+    set_sync_hint:'1. Crea un Gist en <strong>gist.github.com</strong><br>2. En <strong>Settings → Developer Settings → Tokens (classic)</strong>, genera un token con alcance <em>gist</em><br>3. Pega el token y el ID del Gist aquí. Los leads se guardan automáticamente y el nombre de la feria se comparte entre dispositivos.',
+    set_token_lbl:'GitHub Token', set_gist_lbl:'Gist ID',
+    set_test_sync:'🔁 Probar Sincronización', set_save:'💾 Guardar Configuración',
+    set_admin_sec:'👑 Administrador',
+    set_admin_hint:'Carga todos los leads de todos los collectors del Gist. Al cerrar y reabrir la app vuelves a ver solo tus leads.',
+    set_load_all:'📥 Ver todos los leads de la feria',
+    set_export_sec:'📤 Exportar datos', set_export_btn:'⬇️ Exportar Leads (CSV)',
+    set_danger_sec:'⚠️ Zona de peligro', set_clear:'🗑️ Borrar todos los leads locales',
+    toast_saved:'Configuración guardada',
+    toast_pin_mismatch:'Los PINs no coinciden',
+    toast_pin_short:'El PIN debe tener 4 dígitos',
+    toast_pin_removed:'PIN eliminado',
+    toast_sync_ok:'Sincronización OK ✓',
+    toast_sync_fail:'Error de sincronización',
+    toast_leads_pushed:'Leads enviados',
+    toast_leads_pulled:'{n} lead(s) importado(s) de GitHub',
+    toast_exported:'CSV exportado',
+    toast_cleared:'Todos los leads eliminados',
+    toast_no_gist:'Configura el Gist primero',
+    toast_torch_na:'Flash no disponible en este dispositivo',
+    alert_clear:'¿Borrar TODOS los leads locales? Esta acción no se puede deshacer.',
+    confirm_del:'¿Eliminar este lead?',
+    alert_pin_wrong:'PIN incorrecto',
+    qr_new_lead:'Nuevo lead de QR', qr_found:'QR leído',
+    lead_by:'por', lead_at:'en',
+    load_all_ok:'{n} leads cargados de {u} usuario(s)',
+    load_all_none:'No se encontraron leads adicionales',
+    load_all_no_gist:'Configura el Gist primero',
+    empty_none:'Sin leads todavía', empty_filter:'Sin resultados',
+    empty_filter_hint:'Ajusta los filtros o la búsqueda.',
+    empty_gist_hint:'Configura <strong>GitHub Gist</strong> en ⚙️ Configuración para sincronizar leads entre dispositivos. Luego usa el escáner QR o añade manualmente.',
+    empty_start_hint:'Usa el escáner QR o añade tu primer contacto manualmente.',
+    slbl_pendente:'Pendiente', slbl_contactado:'Contactado', slbl_qualificado:'Calificado', slbl_descartado:'Descartado',
+    toast_lead_added:'Lead añadido!', toast_lead_updated:'Lead actualizado!', toast_lead_deleted:'Lead eliminado!',
+    toast_no_leads_export:'Sin leads para exportar!',
+    set_sync_fill:'Rellena el Token y el Gist ID antes de probar.',
+    sync_pulled_fair:'nombre de la feria', sync_pulled_prods:'productos',
+    sync_ok_pulled:'¡Funciona! Importado: {items}.', sync_ok_empty:'¡Funciona! Sin configuración previa en el Gist.',
+    sync_err_token:'Token inválido o sin permiso "gist".', sync_err_404:'Gist ID no encontrado. Confirma el ID.',
+    sync_err_422:'Gist ID inválido (error 422).', sync_err_net:'Error de red',
+    dictate_na:'🎤 Dictado no soportado en este navegador',
+    dictate_listening:'🎤 Escuchando… (toca el micrófono para parar)',
+    dictate_err:'🎤 Error: {e}',
+    form_new_title:'Nuevo Lead', form_edit_title:'Editar Lead', det_title:'Detalles',
+    sugg_label:'Sugerencias'
+  }
+};
+
+let curLang = localStorage.getItem('fl_lang') || 'pt';
+
+function t(key, vars){
+  const str = (LANGS[curLang]||LANGS.pt)[key] || (LANGS.pt)[key] || key;
+  if(!vars)return str;
+  return str.replace(/\{(\w+)\}/g,(_,k)=>vars[k]!==undefined?vars[k]:'{'+k+'}');
+}
+
+function setLang(l){
+  curLang=l;
+  localStorage.setItem('fl_lang',l);
+  applyLang();
+  // Update lang button states
+  document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('on',b.dataset.lang===l));
+}
+
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k=el.dataset.i18n; if(!k)return;
+    el.textContent=t(k);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{
+    const k=el.dataset.i18nHtml; if(!k)return;
+    el.innerHTML=t(k);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    const k=el.dataset.i18nPh; if(!k)return;
+    el.placeholder=t(k);
+  });
+  // Update lang button states
+  document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('on',b.dataset.lang===curLang));
+  // Re-render dynamic sections that use t()
+  if(typeof renderLeads==='function') renderLeads();
+}
+
+/* ══════════════════════════════════════
+   PIN
+══════════════════════════════════════ */
+function hashPin(p){let h=5381;for(let i=0;i<p.length;i++)h=((h<<5)+h)^p.charCodeAt(i);return(h>>>0).toString(16);}
+
+function settingsClick(){
+  if(!D.cfg.pin){openSettings();return;}
+  const h=document.getElementById('pin-hidden');
+  h.value='';
+  document.getElementById('pin-err').style.display='none';
+  updatePinDots('');
+  openMov('m-pin');
+  setTimeout(()=>h.focus(),200);
+}
+function updatePinDots(val){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('filled',i<val.length);
+    d.classList.toggle('active',i===val.length);
+  }
+}
+function pinHiddenInput(){
+  const h=document.getElementById('pin-hidden');
+  const val=h.value.replace(/\D/g,'').slice(0,4);
+  h.value=val;
+  updatePinDots(val);
+  if(val.length===4)checkPin();
+}
+function pinHiddenKey(e){
+  if(e.key==='Enter'){const h=document.getElementById('pin-hidden');if(h.value.length===4)checkPin();}
+}
+function checkPin(){
+  const entered=document.getElementById('pin-hidden').value;
+  if(entered.length<4)return;
+  if(hashPin(entered)===D.cfg.pin){closeMov(null,'m-pin',true);openSettings();}
+  else{
+    document.getElementById('pin-err').style.display='block';
+    setTimeout(()=>{
+      const h=document.getElementById('pin-hidden');
+      h.value=''; updatePinDots('');
+      h.focus();
+      document.getElementById('pin-err').style.display='none';
+    },700);
+  }
+}
+
+/* ══════════════════════════════════════
+   ROUTING
+══════════════════════════════════════ */
+function showView(v){
+  if(curV==='scan'&&v!=='scan')stopScan();
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  const ni=document.getElementById('n-'+v);if(ni)ni.classList.add('on');
+  const bk=document.getElementById('hbk'),hs=document.getElementById('hset'),tt=document.getElementById('hdrt'),sd=document.getElementById('sdot');
+  const bnav=document.querySelector('.bnav'),main=document.querySelector('.main');
+  if(v==='form'||v==='detail'){
+    bk.style.display='flex';hs.style.display='none';sd.style.display='none';
+    tt.textContent=v==='form'?(editId?t('form_edit_title'):t('form_new_title')):t('det_title');
+    bnav.style.display='none';
+    main.style.paddingBottom='12px';
+  } else {
+    bk.style.display='none';hs.style.display='flex';sd.style.display=D.cfg.gistId?'block':'none';
+    if(v==='scan') tt.textContent='Scan QR Code';
+    else if(v==='ocr') tt.textContent=t('nav_card');
+    else updateTitle();
+    bnav.style.display='flex';
+    main.style.paddingBottom='';
+  }
+  curV=v;
+  if(v==='home') requestAnimationFrame(renderLeads);
+  if(v==='scan'){document.getElementById('scan-msg').textContent=t('scan_starting');document.getElementById('scan-msg').className='scan-msg';if(!scanning)setTimeout(startScan,250);}
+  if(v==='ocr'){
+    // Reset to capture phase when entering OCR view
+    g('ocp-capture').style.display='flex';
+    g('ocp-imgwrap').style.display='none';
+    g('ocp-proc').style.display='none';
+    g('ocp-review').style.display='none';
+    g('ocr-file').value='';
+    g('ocr-file').setAttribute('capture','environment');
+  }
+}
+function goBack(){editId=null;showView('home');}
+
+/* ══════════════════════════════════════
+   HOME
+══════════════════════════════════════ */
+function activeLeads(){return adminMode?adminLeads:D.leads;}
+function updateTitle(){
+  const el=document.getElementById('hdrt');
+  if(adminMode){
+    el.innerHTML=`${D.fair} <span style="font-size:11px;background:rgba(255,255,255,.25);padding:2px 8px;border-radius:10px;vertical-align:middle">👑 Admin</span>`;
+  } else {
+    el.textContent=D.fair;
+  }
+}
+
+function renderLeads(){
+  renderStats();
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  let list=activeLeads().filter(l=>{
+    const fok=flt==='all'||l.estado===flt;
+    const sok=!q||['nome','email','empresa','interesse','cargo','collector'].some(k=>(l[k]||'').toLowerCase().includes(q));
+    return fok&&sok;
+  }).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  const el=document.getElementById('llist');
+  if(!list.length){
+    const al=activeLeads().length;
+    const noGist=!D.cfg.gistId&&!al;
+    el.innerHTML=`<div class="empty"><div class="ei">👤</div><h3>${al?t('empty_filter'):t('empty_none')}</h3><p>${al?t('empty_filter_hint'):noGist?t('empty_gist_hint'):t('empty_start_hint')}</p></div>`;
+    return;
+  }
+  el.innerHTML=list.map(l=>`<div class="lcard" onclick="showDetail('${l.id}')">
+    <div class="lct"><div>
+      <div class="lcn">${h(l.nome)}</div>
+      ${(l.cargo||l.empresa)?`<div class="lcs">${h([l.cargo,l.empresa].filter(Boolean).join(' · '))}</div>`:''}
+      ${l.interesse?`<div class="lci">🎯 ${h(l.interesse)}</div>`:''}
+    </div><span class="badge ${bclass(l.estado)}">${slbl(l.estado)}</span></div>
+    <div class="lcm">
+      ${l.email?`<span class="lcmi">✉️ ${h(l.email)}</span>`:''}
+      ${l.tel?`<span class="lcmi"> &nbsp;📞 ${h(l.tel)}</span>`:''}
+      ${l.date?`<span class="lcmi"> &nbsp;📅 ${fdate(l.date)}</span>`:''}
+      ${l.collector?`<span class="lcmi"> &nbsp;👤 ${h(l.collector)}</span>`:''}
+    </div></div>`).join('');
+}
+function renderStats(){
+  const leads=activeLeads();
+  const tot=leads.length,p=leads.filter(l=>l.estado==='pendente').length,c=leads.filter(l=>l.estado==='contactado').length,q=leads.filter(l=>l.estado==='qualificado').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stn">${tot}</div><div class="stl">${t('stat_total')}</div></div>
+    <div class="stat"><div class="stn" style="color:#92400E">${p}</div><div class="stl">${t('s_pendente')}</div></div>
+    <div class="stat"><div class="stn" style="color:#1E40AF">${c}</div><div class="stl">${t('s_contactado').slice(0,7)}.</div></div>
+    <div class="stat"><div class="stn" style="color:#065F46">${q}</div><div class="stl">${t('s_qualificado').slice(0,7)}.</div></div>`;
+}
+function setF(f,el){flt=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderLeads();}
+
+/* ══════════════════════════════════════
+   QR SCANNER
+══════════════════════════════════════ */
+const CAM_KEY='fl_cam';
+const VOPT={width:{ideal:1280,max:1920},height:{ideal:720,max:1080},frameRate:{ideal:30,min:15}};
+async function getRearStream(){
+  // Caminho rápido: deviceId já conhecido (guardado na 1ª abertura)
+  const cached=localStorage.getItem(CAM_KEY);
+  if(cached){
+    try{
+      const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:cached},...VOPT}});
+      const c=s.getVideoTracks()[0].getCapabilities?.()||{};
+      if(!c.focusMode||c.focusMode.includes('continuous'))return s;
+      // Câmara em cache já não serve (ex: dispositivo diferente)
+      s.getTracks().forEach(t=>t.stop());
+      localStorage.removeItem(CAM_KEY);
+    }catch(e){localStorage.removeItem(CAM_KEY);}
+  }
+  // 1ª abertura: câmara traseira padrão
+  const s0=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...VOPT}});
+  const t0=s0.getVideoTracks()[0];
+  const c0=t0.getCapabilities?.()||{};
+  if(!c0.focusMode||c0.focusMode.includes('continuous')){
+    // Câmara principal encontrada — guardar deviceId para próximas aberturas
+    const did=t0.getSettings?.().deviceId;
+    if(did)localStorage.setItem(CAM_KEY,did);
+    return s0;
+  }
+  // Ultra-wide detectada (sem autofoco) — procurar câmara principal
+  s0.getTracks().forEach(t=>t.stop());
+  try{
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    for(const d of devs.filter(d=>d.kind==='videoinput')){
+      try{
+        const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:d.deviceId},...VOPT}});
+        const t=s.getVideoTracks()[0];
+        const c=t.getCapabilities?.()||{};
+        if(c.facingMode?.includes('environment')&&c.focusMode?.includes('continuous')){
+          localStorage.setItem(CAM_KEY,d.deviceId);
+          return s;
+        }
+        s.getTracks().forEach(t=>t.stop());
+      }catch(e){}
+    }
+  }catch(e){}
+  return navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',...VOPT}});
+}
+async function startScan(){
+  const msg=document.getElementById('scan-msg');
+  torchOn=false;torchAuto=true;brightFrames=0;
+  document.getElementById('btn-torch').classList.remove('on');
+  document.getElementById('btn-torch').style.display='';
+  document.getElementById('scan-ctrls').style.display='none';
+  document.getElementById('zoom-wrap').style.display='none';
+  try{
+    msg.textContent='⏳ A iniciar câmara…';
+    stream=await getRearStream();
+    const vid=document.getElementById('qr-video');vid.srcObject=stream;await vid.play();
+    // Fixar foco, exposição e balanço de brancos contínuos
+    const track=stream.getVideoTracks()[0];
+    if(track){
+      const caps=track.getCapabilities?.()||{};
+      const adv=[];
+      if(caps.focusMode?.includes('continuous'))adv.push({focusMode:'continuous'});
+      if(caps.exposureMode?.includes('continuous'))adv.push({exposureMode:'continuous'});
+      if(caps.whiteBalanceMode?.includes('continuous'))adv.push({whiteBalanceMode:'continuous'});
+      if(adv.length)try{await track.applyConstraints({advanced:adv});}catch(e){}
+    }
+    msg.textContent=t('scan_prompt');msg.className='scan-msg';
+    scanning=true;raf=requestAnimationFrame(tick);
+    setTimeout(setupScanControls,700);
+  }catch(e){msg.textContent='⚠️ Sem acesso à câmara: '+e.message;msg.className='scan-msg scan-err';}
+}
+function setupScanControls(){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  const caps=track.getCapabilities?track.getCapabilities():{};
+  // Mostrar sempre o botão de flash — alguns Androids não reportam caps.torch
+  // mesmo suportando; escondemos só se realmente falhar ao usar (ver toggleTorch)
+  document.getElementById('scan-ctrls').style.display='flex';
+  if(caps.zoom){
+    zoomCap=caps.zoom;
+    const sl=document.getElementById('zoom-slider');
+    const zMin=caps.zoom.min||1;
+    const zMax=Math.min(caps.zoom.max||8,8);
+    sl.min=zMin; sl.max=zMax; sl.step=caps.zoom.step||0.1;
+    // Start at 2× (or max if lower) — fills frame better for badge-distance QR codes
+    const zStart=Math.min(2.0, zMax);
+    sl.value=zStart;
+    document.getElementById('zoom-lbl').textContent=zStart.toFixed(1)+'×';
+    document.getElementById('zoom-wrap').style.display='flex';
+    applyZoom(zStart); // apply immediately
+  }
+}
+async function toggleTorch(){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  const next=!torchOn;torchAuto=false;
+  try{
+    await track.applyConstraints({advanced:[{torch:next}]});
+    torchOn=next;
+    document.getElementById('btn-torch').classList.toggle('on',torchOn);
+  }catch(e){
+    // Dispositivo não suporta flash via browser
+    toast(t('toast_torch_na'));
+    document.getElementById('btn-torch').style.display='none';
+  }
+}
+async function applyZoom(v){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  document.getElementById('zoom-lbl').textContent=parseFloat(v).toFixed(1)+'×';
+  try{await track.applyConstraints({advanced:[{zoom:parseFloat(v)}]});}catch(e){}
+}
+function checkBrightness(data){
+  const track=stream?stream.getVideoTracks()[0]:null;
+  if(!track)return;
+  let sum=0,n=0,step=Math.max(1,Math.floor(data.length/4000));
+  for(let i=0;i<data.length;i+=step*4){sum+=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];n++;}
+  const bright=n?sum/n:128;
+  const should=bright<60;
+  if(should!==torchOn){
+    torchOn=should;
+    // Se falhar silenciosamente, o torch simplesmente não acende
+    track.applyConstraints({advanced:[{torch:torchOn}]}).catch(()=>{torchOn=false;});
+    document.getElementById('btn-torch').classList.toggle('on',torchOn);
+  }
+}
+function stopScan(){
+  scanning=false;
+  if(stream){
+    const track=stream.getVideoTracks()[0];
+    if(track&&torchOn){try{track.applyConstraints({advanced:[{torch:false}]});}catch(e){}}
+    stream.getTracks().forEach(t=>t.stop());stream=null;
+  }
+  torchOn=false;torchAuto=true;zoomCap=null;
+  document.getElementById('btn-torch').style.display='';
+  if(raf){cancelAnimationFrame(raf);raf=null;}
+}
+function tick(){
+  if(!scanning)return;
+  const vid=document.getElementById('qr-video'),cv=document.getElementById('qr-cv');
+  if(vid.readyState===vid.HAVE_ENOUGH_DATA){
+    const vw=vid.videoWidth,vh=vid.videoHeight;
+    // Cortar ao quadrado central do frame (equivale à janela visível na cambox)
+    // e normalizar para 640px. Assim câmaras fracas fazem upscale, câmaras
+    // potentes (Samsung flagship com 3264x2448) fazem downscale — processamento
+    // rápido e consistente em todos os dispositivos.
+    const crop=Math.min(vw,vh);
+    const sx=(vw-crop)/2, sy=(vh-crop)/2;
+    const TARGET=640;
+    cv.width=TARGET;cv.height=TARGET;
+    const ctx=cv.getContext('2d');
+    ctx.drawImage(vid,sx,sy,crop,crop,0,0,TARGET,TARGET);
+    const img=ctx.getImageData(0,0,TARGET,TARGET);
+    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+    if(code){stopScan();onQR(code.data);return;}
+    if(torchAuto&&++brightFrames%30===0)checkBrightness(img.data);
+  }
+  raf=requestAnimationFrame(tick);
+}
+function onQR(raw){
+  document.getElementById('scan-msg').textContent='✅ QR detetado! A abrir formulário…';
+  toast(t('qr_found'));
+  setTimeout(()=>{prepareNew(parseQR(raw));showView('form');},600);
+}
+
+/* ══════════════════════════════════════
+   QR PARSER — suporta vCard, meCard,
+   JSON, URL, key=value, texto livre
+══════════════════════════════════════ */
+function parseQR(s){
+  s=(s||'').trim();
+  if(/BEGIN:VCARD/i.test(s))return parseVCard(s);
+  if(/^MECARD:/i.test(s))return parseMeCard(s);
+  if(s.startsWith('{'))try{return fromObj(JSON.parse(s));}catch(e){}
+  if(s.startsWith('['))try{const a=JSON.parse(s);if(a[0])return fromObj(a[0]);}catch(e){}
+  if(/^https?:\/\//i.test(s)){
+    try{const u=new URL(s);const c=fromObj(Object.fromEntries(u.searchParams));if(c.nome||c.email||c.tel){c.notas=(c.notas?c.notas+'\n':'')+s;return c;}}catch(e){}
+    return base(s);
+  }
+  const kv=parseKV(s);if(kv.nome||kv.email||kv.tel)return kv;
+  const lines=s.split(/[\n\r]+/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length>1)return smartAlloc(lines);
+  if(/^[\w.+\-]+@[\w.\-]+\.\w{2,}$/.test(s))return Object.assign(base(),'email',{email:s});
+  if(/^[+\d][\d\s\-().]{5,}$/.test(s))return Object.assign(base(),{tel:s});
+  return base(s);
+}
+function base(notas){return {nome:'',email:'',tel:'',emp:'',cargo:'',notas:notas||''};}
+function parseVCard(s){
+  const c=base();
+  for(const ln of s.split(/\r?\n/)){
+    const L=ln.trim();
+    if(/^FN[;:]/i.test(L))          {c.nome=L.replace(/^FN[^:]*:/i,'').replace(/\\n/g,' ').trim();}
+    else if(/^N[;:]/i.test(L)&&!c.nome){const p=L.replace(/^N[^:]*:/i,'').split(';');c.nome=[p[1],p[0]].filter(Boolean).join(' ').trim();}
+    else if(/^EMAIL[;:]/i.test(L))   {if(!c.email)c.email=L.replace(/^[^:]+:/,'').trim();}
+    else if(/^TEL[;:]/i.test(L))     {if(!c.tel)c.tel=L.replace(/^[^:]+:/,'').trim();}
+    else if(/^ORG[;:]/i.test(L))     {c.emp=L.replace(/^ORG[^:]*:/i,'').split(';')[0].trim();}
+    else if(/^TITLE[;:]/i.test(L))   {c.cargo=L.replace(/^TITLE[^:]*:/i,'').trim();}
+    else if(/^NOTE[;:]/i.test(L))    {c.notas+=(c.notas?'\n':'')+L.replace(/^NOTE[^:]*:/i,'').trim();}
+  }
+  return c;
+}
+function parseMeCard(s){
+  const c=base();
+  const body=s.replace(/^MECARD:/i,'').replace(/;+$/,'');
+  for(const f of body.split(';')){
+    const i=f.indexOf(':');if(i<0)continue;
+    const k=f.slice(0,i).toUpperCase().trim(),v=f.slice(i+1).trim();
+    if(k==='N')    c.nome=v.replace(',', ' ').trim();
+    if(k==='EMAIL'&&!c.email)c.email=v;
+    if(k==='TEL'&&!c.tel)c.tel=v;
+    if(k==='ORG')  c.emp=v;
+    if(k==='MEMO') c.notas=v;
+  }
+  return c;
+}
+function fromObj(o){
+  const g=(...ks)=>{for(const k of ks){const lk=k.toLowerCase();for(const [ok,ov] of Object.entries(o)){if(ok.toLowerCase()===lk&&ov)return String(ov);}}return '';};
+  return{nome:g('name','nome','fullName','full_name','displayName','contact'),email:g('email','mail','e-mail'),tel:g('phone','tel','telefone','mobile','cel','phone_number'),emp:g('company','empresa','org','organization','Organisation','firm'),cargo:g('title','cargo','role','position','job','function'),notas:g('notes','notas','note','description','memo','comment')};
+}
+function parseKV(s){
+  const c=base();let matched=false;
+  const NKS=['name','nome','fullname','full_name'],EKS=['email','mail'],TKS=['tel','phone','mobile','telefone','cel'],OKS=['org','company','empresa','organization'],CKS=['title','cargo','role','position'];
+  for(const m of s.matchAll(/([A-Za-z_\-]+)\s*[:=]\s*(.+)/g)){
+    const k=m[1].toLowerCase().trim(),v=m[2].trim();matched=true;
+    if(NKS.includes(k))c.nome=v;
+    else if(EKS.includes(k))c.email=v;
+    else if(TKS.includes(k))c.tel=v;
+    else if(OKS.includes(k))c.emp=v;
+    else if(CKS.includes(k))c.cargo=v;
+    else c.notas+=(c.notas?'\n':'')+m[1]+': '+v;
+  }
+  return matched?c:{};
+}
+function smartAlloc(lines){
+  const c=base();const unalloc=[];
+  for(const ln of lines){
+    if(!c.email&&/[\w.+\-]+@[\w.\-]+\.\w{2,}/.test(ln)){c.email=ln.match(/[\w.+\-]+@[\w.\-]+\.\w{2,}/)[0];continue;}
+    const digs=ln.replace(/\D/g,'');
+    if(!c.tel&&digs.length>=7&&digs.length<=15&&/^[+\d][\d\s\-().]{5,}$/.test(ln)){c.tel=ln;continue;}
+    if(/^https?:\/\//i.test(ln)){c.notas+=(c.notas?'\n':'')+ln;continue;}
+    if(!c.emp&&/\b(S\.?A\.?|Lda\.?|Ltd\.?|Inc\.?|Corp\.?|SL|GmbH|SARL|S\.L\.)\b/i.test(ln)){c.emp=ln;continue;}
+    unalloc.push(ln);
+  }
+  for(let i=0;i<unalloc.length;i++){
+    if(!c.nome&&/^[A-Za-zÀ-ÿ\s\-'.]{2,60}$/.test(unalloc[i])){c.nome=unalloc.splice(i,1)[0];break;}
+  }
+  if(!c.emp&&unalloc.length)c.emp=unalloc.shift();
+  if(unalloc.length)c.notas+=(c.notas?'\n':'')+unalloc.join('\n');
+  return c;
+}
+
+/* ══════════════════════════════════════
+   PRODUCT SUGGESTIONS
+══════════════════════════════════════ */
+function onProdInput(){
+  const inp=document.getElementById('f-int'),val=inp.value;
+  const lastComma=val.lastIndexOf(',');
+  const cur=val.slice(lastComma+1).trim().toLowerCase();
+  const prods=(curLang==='en'?D.cfg.products_en:curLang==='es'?D.cfg.products_es:D.cfg.products)||D.cfg.products||[];
+  if(!prods.length){document.getElementById('sugg-drop').style.display='none';return;}
+  const used=val.split(',').map(s=>s.trim().toLowerCase());
+  const matches=prods.filter(p=>(!cur||p.toLowerCase().includes(cur))&&!used.includes(p.toLowerCase()));
+  const drop=document.getElementById('sugg-drop');
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML=(cur?'':'<div class="sugg-item sep">'+t('sugg_label')+'</div>')+matches.map(p=>`<div class="sugg-item" onmousedown="addProd(event,'${p.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">📦 ${h(p)}</div>`).join('');
+  drop.style.display='block';
+}
+function addProd(e,p){
+  e.preventDefault();
+  const inp=document.getElementById('f-int'),val=inp.value;
+  const lc=val.lastIndexOf(',');
+  inp.value=(lc>=0?val.slice(0,lc+1)+' ':'')+p+', ';
+  document.getElementById('sugg-drop').style.display='none';
+  inp.focus();onProdInput();
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.prod-wrap'))document.getElementById('sugg-drop').style.display='none';});
+
+/* ══════════════════════════════════════
+   VOICE INPUT
+══════════════════════════════════════ */
+function toggleVoice(fid,btnId){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast(t('dictate_na'));return;}
+  const btn=document.getElementById(btnId);
+  if(recog){recog.stop();recog=null;document.querySelectorAll('.mic-btn').forEach(b=>b.classList.remove('on'));return;}
+  recog=new SR();recog.lang=curLang==='pt'?'pt-PT':curLang==='es'?'es-ES':'en-GB';recog.continuous=true;recog.interimResults=false;
+  btn.classList.add('on');toast(t('dictate_listening'));
+  recog.onresult=(e)=>{
+    let txt='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)txt+=e.results[i][0].transcript+' ';
+    if(txt.trim()){const el=document.getElementById(fid);const sep=el.value&&!el.value.endsWith(' ')&&!el.value.endsWith(',')?' ':'';el.value+=sep+txt.trim();}
+  };
+  recog.onerror=(e)=>{recog=null;btn.classList.remove('on');if(e.error!=='aborted')toast(t('dictate_err',{e:e.error}));};
+  recog.onend=()=>{recog=null;btn.classList.remove('on');};
+  recog.start();
+}
+
+/* ══════════════════════════════════════
+   FORM
+══════════════════════════════════════ */
+function prepareNew(pre){
+  editId=null;document.getElementById('lform').reset();document.getElementById('sugg-drop').style.display='none';
+  const d7=new Date();d7.setDate(d7.getDate()+7);document.getElementById('f-date').value=d7.toISOString().split('T')[0];
+  if(pre){
+    if(pre.nome)  document.getElementById('f-nome').value=pre.nome;
+    if(pre.email) document.getElementById('f-email').value=pre.email;
+    if(pre.tel)   document.getElementById('f-tel').value=pre.tel;
+    if(pre.emp)   document.getElementById('f-emp').value=pre.emp;
+    if(pre.cargo) document.getElementById('f-cargo').value=pre.cargo;
+    if(pre.notas) document.getElementById('f-notas').value=pre.notas;
+  }
+}
+function loadEdit(id){
+  const l=D.leads.find(x=>x.id===id);if(!l)return;editId=id;
+  document.getElementById('f-nome').value=l.nome||'';
+  document.getElementById('f-email').value=l.email||'';
+  document.getElementById('f-tel').value=l.tel||'';
+  document.getElementById('f-emp').value=l.empresa||'';
+  document.getElementById('f-cargo').value=l.cargo||'';
+  document.getElementById('f-int').value=l.interesse||'';
+  document.getElementById('f-notas').value=l.notas||'';
+  document.getElementById('f-est').value=l.estado||'pendente';
+  document.getElementById('f-date').value=l.date||'';
+  showView('form');
+}
+function saveLead(e){
+  e.preventDefault();
+  const intVal=document.getElementById('f-int').value.replace(/,\s*$/,'').trim();
+  const lead={
+    id:editId||uid(),
+    ts:editId?(D.leads.find(x=>x.id===editId)?.ts||new Date().toISOString()):new Date().toISOString(),
+    upd:new Date().toISOString(),
+    collector:D.user||'',
+    nome:document.getElementById('f-nome').value.trim(),
+    email:document.getElementById('f-email').value.trim(),
+    tel:document.getElementById('f-tel').value.trim(),
+    empresa:document.getElementById('f-emp').value.trim(),
+    cargo:document.getElementById('f-cargo').value.trim(),
+    interesse:intVal,
+    notas:document.getElementById('f-notas').value.trim(),
+    estado:document.getElementById('f-est').value,
+    date:document.getElementById('f-date').value,
+  };
+  if(editId){const i=D.leads.findIndex(x=>x.id===editId);if(i>=0)D.leads[i]=lead;}
+  else D.leads.push(lead);
+  save();toast(editId?t('toast_lead_updated'):'✅ '+t('toast_lead_added'));
+  editId=null;autoSync();showView('home');
+}
+
+/* ══════════════════════════════════════
+   DETAIL
+══════════════════════════════════════ */
+function showDetail(id){
+  const l=D.leads.find(x=>x.id===id);if(!l)return;
+  document.getElementById('dbody').innerHTML=`
+    <div class="dhero">
+      <div class="dav">${h((l.nome||'?')[0]).toUpperCase()}</div>
+      <div style="flex:1"><div class="davn">${h(l.nome)}</div>${(l.cargo||l.empresa)?`<div class="davs">${h([l.cargo,l.empresa].filter(Boolean).join(' · '))}</div>`:''}</div>
+      <span class="badge ${bclass(l.estado)}" style="margin-top:0">${slbl(l.estado)}</span>
+    </div>
+    ${(l.email||l.tel)?`<div class="dcard">
+      ${l.email?`<div class="drow"><span class="dic">✉️</span><div><div class="dlbl">${t('f_email_lbl')}</div><a class="dval" href="mailto:${h(l.email)}">${h(l.email)}</a></div></div>`:''}
+      ${l.tel?`<div class="drow"><span class="dic">📞</span><div><div class="dlbl">${t('f_phone_lbl')}</div><a class="dval" href="tel:${h(l.tel)}">${h(l.tel)}</a></div></div>`:''}
+    </div>`:''}
+    ${(l.empresa||l.cargo)?`<div class="dcard">
+      ${l.empresa?`<div class="drow"><span class="dic">🏢</span><div><div class="dlbl">${t('f_company_lbl')}</div><div class="dval">${h(l.empresa)}</div></div></div>`:''}
+      ${l.cargo?`<div class="drow"><span class="dic">💼</span><div><div class="dlbl">${t('f_role_lbl')}</div><div class="dval">${h(l.cargo)}</div></div></div>`:''}
+    </div>`:''}
+    ${l.interesse?`<div class="dcard"><div class="drow"><span class="dic">🎯</span><div><div class="dlbl">${t('f_product_lbl')}</div><div class="dval">${h(l.interesse)}</div></div></div></div>`:''}
+    ${l.notas?`<div class="dcard"><div class="drow"><span class="dic">📝</span><div><div class="dlbl">${t('f_notes_lbl')}</div><div class="dval" style="white-space:pre-wrap">${h(l.notas)}</div></div></div></div>`:''}
+    <div class="dcard">
+      <div class="drow"><span class="dic">📋</span><div><div class="dlbl">${t('f_status_lbl')}</div><div class="dval">${slbl(l.estado)}</div></div></div>
+      ${l.date?`<div class="drow"><span class="dic">📅</span><div><div class="dlbl">${t('f_date_lbl')}</div><div class="dval">${fdate(l.date)}</div></div></div>`:''}
+      ${l.collector?`<div class="drow"><span class="dic">👤</span><div><div class="dlbl">${t('lead_by')}</div><div class="dval">${h(l.collector)}</div></div></div>`:''}
+      <div class="drow"><span class="dic">🕐</span><div><div class="dlbl">${t('lead_at')}</div><div class="dval">${fdt(l.ts)}</div></div></div>
+    </div>
+    <div class="brow" style="margin-top:16px;margin-bottom:8px">
+      <button class="btn btn-p" onclick="loadEdit('${l.id}')">${t('det_edit')}</button>
+      <button class="btn btn-d" style="flex:0;width:52px;padding:14px 0" onclick="delLead('${l.id}')">🗑️</button>
+    </div>`;
+  showView('detail');
+}
+function delLead(id){if(!confirm(t('confirm_del')))return;D.leads=D.leads.filter(x=>x.id!==id);save();autoSync();toast(t('toast_lead_deleted'));showView('home');}
+
+/* ══════════════════════════════════════
+   OCR — CARTÃO DE CONTACTO
+   Fases: Captura → Corte → OCR → Zonas
+══════════════════════════════════════ */
+const FCOL={nome:'#1D4ED8',emp:'#7C3AED',cargo:'#0891B2',email:'#059669',tel:'#D97706',nt1:'#64748B',nt2:'#475569',nt3:'#334155',ignore:'#94A3B8'};
+function getFLBL(){return{nome:'👤 '+t('field_nome'),emp:'🏢 '+t('field_emp'),cargo:'💼 '+t('field_cargo'),email:'✉️ '+t('field_email'),tel:'📞 '+t('field_tel'),nt1:'📝 '+t('field_nt1'),nt2:'📝 '+t('field_nt2'),nt3:'📝 '+t('field_nt3'),ignore:'✕ '+t('field_ignore')};}
+const FLBL={}; // dynamic — use getFLBL() at render time
+
+const OCR_FIELDS=['nome','emp','cargo','email','tel','nt1','nt2','nt3'];
+
+let ocrLines=[], ocrWords=[], ocrNW=0, ocrNH=0;
+let cropRect={x:0,y:0,w:0,h:0}, _cropDrag=null, _activeZone=null;
+
+function g(id){return document.getElementById(id);}
+
+/* ── Crop rect: pointer events (init once) ── */
+function setupCropEvents(){
+  const rect=g('crop-rect');
+  rect.addEventListener('pointerdown',e=>{
+    e.stopPropagation();
+    rect.setPointerCapture(e.pointerId);
+    _cropDrag={corner:e.target.dataset.c||'',sx:e.clientX,sy:e.clientY,sr:{...cropRect}};
+  });
+  rect.addEventListener('pointermove',e=>{
+    if(!rect.hasPointerCapture(e.pointerId)||!_cropDrag)return;
+    const dx=e.clientX-_cropDrag.sx, dy=e.clientY-_cropDrag.sy;
+    const s=_cropDrag.sr, c=_cropDrag.corner;
+    if(!c){
+      cropRect={...s,x:s.x+dx,y:s.y+dy};
+    } else {
+      const r={...s};
+      if(c.includes('l')){r.x=s.x+dx;r.w=s.w-dx;}
+      if(c.includes('r')){r.w=s.w+dx;}
+      if(c.includes('t')){r.y=s.y+dy;r.h=s.h-dy;}
+      if(c.includes('b')){r.h=s.h+dy;}
+      cropRect=r;
+    }
+    applyCropRect();
+  });
+  rect.addEventListener('pointerup',()=>{_cropDrag=null;});
+}
+
+function initCropFrame(){
+  const imgEl=g('ocr-img');
+  const iw=imgEl.offsetWidth, ih=imgEl.offsetHeight;
+  const AR=1.75; // business card 3.5" × 2"
+  let cw=iw*0.88, ch=cw/AR;
+  if(ch>ih*0.85){ch=ih*0.85;cw=ch*AR;}
+  cropRect={x:(iw-cw)/2,y:(ih-ch)/2,w:cw,h:ch};
+  applyCropRect();
+}
+
+function applyCropRect(){
+  const imgEl=g('ocr-img');
+  const iw=imgEl.offsetWidth, ih=imgEl.offsetHeight;
+  cropRect.w=Math.max(60,cropRect.w); cropRect.h=Math.max(40,cropRect.h);
+  cropRect.x=Math.max(0,Math.min(iw-cropRect.w,cropRect.x));
+  cropRect.y=Math.max(0,Math.min(ih-cropRect.h,cropRect.y));
+  const el=g('crop-rect');
+  el.style.left=cropRect.x+'px'; el.style.top=cropRect.y+'px';
+  el.style.width=cropRect.w+'px'; el.style.height=cropRect.h+'px';
+}
+
+/* ── Pre-process image for OCR (grayscale + contrast + min 1600px) ── */
+async function preprocessForOCR(blob){
+  return new Promise(resolve=>{
+    const img=new Image(), url=URL.createObjectURL(blob);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const MIN=1600; let w=img.naturalWidth,h=img.naturalHeight;
+      if(w<MIN){const s=MIN/w;w=Math.round(w*s);h=Math.round(h*s);}
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+      const id=ctx.getImageData(0,0,w,h); const d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        const gray=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+        const c=Math.min(255,Math.max(0,(gray-128)*1.5+148));
+        d[i]=d[i+1]=d[i+2]=c;
+      }
+      ctx.putImageData(id,0,0);
+      cv.toBlob(resolve,'image/png');
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(blob);};
+    img.src=url;
+  });
+}
+
+/* ── Auto-assign Tesseract lines to contact-card fields ── */
+function autoAssignFields(lines){
+  const r={nome:null,emp:null,cargo:null,email:null,tel:null,notas:null};
+  const used=new Set();
+
+  // Email — strongest signal: contains @
+  for(let i=0;i<lines.length;i++){
+    if(/@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(lines[i].text)&&!used.has(i)){
+      r.email=lines[i]; used.add(i); break;
+    }
+  }
+  // Phone — mostly digits/separators, ≥7 digits
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    const t=lines[i].text.trim();
+    const digits=t.replace(/\D/g,'');
+    if(digits.length>=7&&t.replace(/[\d\s\+\-\(\)\.\/]/g,'').length<=2){
+      r.tel=lines[i]; used.add(i); break;
+    }
+  }
+  // Name — largest font (tallest bbox) among remaining
+  let maxH=0,nameIdx=-1;
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    const h=lines[i].bbox.y1-lines[i].bbox.y0;
+    if(h>maxH){maxH=h;nameIdx=i;}
+  }
+  if(nameIdx>=0){r.nome=lines[nameIdx];used.add(nameIdx);}
+  // Company — legal suffix or ALL-CAPS
+  const coRE=/\b(lda|s\.?a\.?|ltd|inc|llc|gmbh|s\.?l\.?|srl|bv|nv|plc|corp|group|solutions?|services?|tecnologia|sistemas?|systems?|consulting|consultora|consultoria)\b/i;
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    const t=lines[i].text.trim();
+    if(coRE.test(t)||(t.length>3&&t===t.toUpperCase())){r.emp=lines[i];used.add(i);break;}
+  }
+  // Cargo — job title keywords
+  const cargoRE=/\b(ceo|cto|cfo|coo|cmo|diretor[a]?|director[a]?|gerente|manager|gestor[a]?|engenheiro|engenheira|engineer|developer|desenvolvedor[a]?|analyst|analista|consultor[a]?|comercial|marketing|operations|product|president|vice|vp\b|head|lead|coordenador[a]?|supervisor[a]?|responsável|técnico|técnica|administrador[a]?|sócio|socio|fundador[a]?|founder|partner|parceiro)\b/i;
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    if(cargoRE.test(lines[i].text)){r.cargo=lines[i];used.add(i);break;}
+  }
+  // Remaining lines → fill emp, cargo, notas in order
+  for(let i=0;i<lines.length;i++){
+    if(used.has(i))continue;
+    if(!r.emp){r.emp=lines[i];used.add(i);continue;}
+    if(!r.cargo){r.cargo=lines[i];used.add(i);continue;}
+    if(!r.notas){r.notas=lines[i];used.add(i);break;}
+  }
+  return r;
+}
+
+/* ── Build ocrLines: 5 main fields + 3 notas lines ── */
+function buildZones(assignments){
+  const MAIN=['nome','emp','cargo','email','tel'];
+  const det=MAIN.map(f=>assignments[f]).filter(Boolean);
+  const avgH=det.length?det.reduce((s,l)=>s+(l.bbox.y1-l.bbox.y0),0)/det.length:ocrNH*0.07;
+  const zoneH=Math.max(avgH,ocrNH*0.03), pad=ocrNW*0.02, gap=zoneH*0.25;
+  ocrLines=[]; const missing=[];
+  for(const field of MAIN){
+    const line=assignments[field];
+    if(line){
+      const cy=(line.bbox.y0+line.bbox.y1)/2;
+      ocrLines.push({id:uid(),field,bbox:{x0:pad,y0:cy-zoneH/2,x1:ocrNW-pad,y1:cy+zoneH/2}});
+    } else { missing.push(field); }
+  }
+  let stackY=ocrLines.reduce((m,z)=>Math.max(m,z.bbox.y1),ocrNH*0.45)+gap;
+  for(const field of missing){
+    ocrLines.push({id:uid(),field,bbox:{x0:pad,y0:stackY,x1:ocrNW-pad,y1:stackY+zoneH}});
+    stackY+=zoneH+gap;
+  }
+  // 3 notas lines — each 1 line height, stacked
+  const notasLine=assignments.notas;
+  const allMaxY=ocrLines.reduce((m,z)=>Math.max(m,z.bbox.y1),0);
+  let ntY=notasLine
+    ? Math.max(allMaxY+gap,(notasLine.bbox.y0+notasLine.bbox.y1)/2-zoneH/2)
+    : allMaxY+gap;
+  for(const nt of ['nt1','nt2','nt3']){
+    ocrLines.push({id:uid(),field:nt,bbox:{x0:pad,y0:ntY,x1:ocrNW-pad,y1:ntY+zoneH}});
+    ntY+=zoneH+gap;
+  }
+}
+
+async function doOCR(input){
+  const file=input.files[0]; if(!file)return;
+  input.value='';
+  const imgEl=g('ocr-img');
+  g('ocp-capture').style.display='none';
+  g('ocp-imgwrap').style.display='block';
+  g('ocp-crop').style.display='block';
+  g('ocp-proc').style.display='none';
+  g('ocp-review').style.display='none';
+  const url=URL.createObjectURL(file);
+  await new Promise(r=>{imgEl.onload=()=>{URL.revokeObjectURL(url);r();};imgEl.src=url;});
+  ocrNW=imgEl.naturalWidth||800; ocrNH=imgEl.naturalHeight||600;
+  g('crop-overlay').style.display='block';
+  requestAnimationFrame(()=>initCropFrame());
+}
+
+async function cropAndOCR(){
+  const imgEl=g('ocr-img');
+  const scaleX=imgEl.naturalWidth/imgEl.offsetWidth;
+  const scaleY=imgEl.naturalHeight/imgEl.offsetHeight;
+  const cx=Math.round(cropRect.x*scaleX), cy=Math.round(cropRect.y*scaleY);
+  const cw=Math.max(1,Math.round(cropRect.w*scaleX)), ch=Math.max(1,Math.round(cropRect.h*scaleY));
+  const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch;
+  cv.getContext('2d').drawImage(imgEl,cx,cy,cw,ch,0,0,cw,ch);
+  const croppedBlob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  const croppedUrl=URL.createObjectURL(croppedBlob);
+  g('crop-overlay').style.display='none'; g('ocp-crop').style.display='none';
+  await new Promise(r=>{imgEl.onload=()=>{URL.revokeObjectURL(croppedUrl);r();};imgEl.src=croppedUrl;});
+  ocrNW=imgEl.naturalWidth; ocrNH=imgEl.naturalHeight;
+  g('ocp-proc').style.display='block';
+  g('ocr-bar').style.width='5%';
+  g('ocr-msg').textContent='⏳ A preparar imagem…';
+  g('ocr-msg').className='scan-msg';
+  await runOCR(croppedBlob);
+}
+
+async function runOCR(blob){
+  const processed=await preprocessForOCR(blob);
+  // Get processed width to rescale bboxes if upscaled
+  let procW=ocrNW;
+  try{
+    const u=URL.createObjectURL(processed);
+    procW=await new Promise(r=>{const i=new Image();i.onload=()=>{URL.revokeObjectURL(u);r(i.naturalWidth);};i.src=u;});
+  }catch(e){}
+  const bscale=ocrNW/procW;
+  let rawLines=[], assignments={};
+  try{
+    const res=await Tesseract.recognize(processed,'por+eng',{
+      logger:m=>{
+        if(m.status==='recognizing text'){
+          g('ocr-bar').style.width=Math.round(m.progress*100)+'%';
+          g('ocr-msg').textContent='🔍 A reconhecer… '+Math.round(m.progress*100)+'%';
+        } else if(m.status.includes('load')||m.status.includes('initial')){
+          g('ocr-msg').textContent='⏳ A carregar motor…'; g('ocr-bar').style.width='20%';
+        }
+      }
+    });
+    ocrWords=(res.data.words||[]).filter(w=>w.text.trim()&&w.confidence>20);
+    rawLines=(res.data.lines||[]).filter(l=>l.text.trim()&&l.confidence>15);
+    if(bscale!==1&&bscale>0){
+      for(const l of rawLines){l.bbox.x0*=bscale;l.bbox.y0*=bscale;l.bbox.x1*=bscale;l.bbox.y1*=bscale;}
+      for(const w of ocrWords){w.bbox.x0*=bscale;w.bbox.y0*=bscale;w.bbox.x1*=bscale;w.bbox.y1*=bscale;}
+    }
+    assignments=autoAssignFields(rawLines);
+    const found=Object.values(assignments).filter(Boolean).length;
+    g('ocr-msg').textContent=found
+      ?`✅ ${found} campo(s) detetado(s) — revê e ajusta se necessário`
+      :'⚠️ Nada reconhecido — posiciona os retângulos manualmente';
+    g('ocr-msg').className='scan-msg'+(found?'':' scan-err');
+  }catch(e){
+    ocrWords=[]; assignments={};
+    g('ocr-msg').textContent='⚠️ OCR sem resultados — posiciona os retângulos manualmente';
+    g('ocr-msg').className='scan-msg scan-err';
+  }
+  buildZones(assignments);
+  g('ocp-proc').style.display='none';
+  g('ocp-review').style.display='block';
+  renderZones();
+}
+
+function renderZones(){
+  const cont=g('ocp-imgcont');
+  cont.querySelectorAll('.ocr-zone').forEach(e=>e.remove());
+  const imgEl=g('ocr-img');
+  const sx=imgEl.offsetWidth/ocrNW, sy=imgEl.offsetHeight/ocrNH;
+  for(const zone of ocrLines){
+    const col=FCOL[zone.field]||'#64748B';
+    const el=document.createElement('div'); el.className='ocr-zone';
+    const l=zone.bbox.x0*sx, t=zone.bbox.y0*sy;
+    const w=(zone.bbox.x1-zone.bbox.x0)*sx, hh=(zone.bbox.y1-zone.bbox.y0)*sy;
+    el.style.cssText=`left:${l}px;top:${t}px;width:${w}px;height:${hh}px;border:2.5px solid ${col};background:${col}28;`;
+    const lbl=document.createElement('span'); lbl.className='ocr-lbl';
+    lbl.style.cssText=`background:${col};`; lbl.textContent=getFLBL()[zone.field]||zone.field;
+    el.appendChild(lbl); makeDrag(el,zone,imgEl,sx,sy);
+    zone.el=el; cont.appendChild(el);
+  }
+}
+
+function showZonePopup(zone,el){
+  _activeZone=zone;
+  const popup=g('ocr-popup'), sel=g('ocr-popup-sel');
+  sel.value=zone.field;
+  const cont=g('ocp-imgcont');
+  const cr=cont.getBoundingClientRect(), er=el.getBoundingClientRect();
+  let top=er.bottom-cr.top+4;
+  const left=Math.max(4,Math.min(er.left-cr.left,cr.width-180));
+  if(top+130>cr.height) top=er.top-cr.top-130;
+  popup.style.top=top+'px'; popup.style.left=left+'px';
+  popup.style.display='block';
+}
+
+function changeZoneField(val){
+  if(!_activeZone)return;
+  _activeZone.field=val;
+  const col=FCOL[val]||'#64748B';
+  if(_activeZone.el){
+    _activeZone.el.style.border=`2.5px solid ${col}`;
+    _activeZone.el.style.background=col+'28';
+    const lbl=_activeZone.el.querySelector('.ocr-lbl');
+    if(lbl){lbl.style.background=col; lbl.textContent=getFLBL()[val]||val;}
+  }
+  g('ocr-popup').style.display='none'; _activeZone=null;
+}
+
+function makeDrag(el,zone,imgEl,sx,sy){
+  let px,py,pl,pt,moved;
+  el.addEventListener('pointerdown',e=>{
+    el.setPointerCapture(e.pointerId);
+    const er=el.getBoundingClientRect(),ir=imgEl.getBoundingClientRect();
+    px=e.clientX; py=e.clientY; pl=er.left-ir.left; pt=er.top-ir.top;
+    moved=false; el.style.zIndex='5';
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!el.hasPointerCapture(e.pointerId))return;
+    const dx=e.clientX-px, dy=e.clientY-py;
+    if(Math.abs(dx)>4||Math.abs(dy)>4) moved=true;
+    if(moved){el.style.left=(pl+dx)+'px'; el.style.top=(pt+dy)+'px';}
+  });
+  el.addEventListener('pointerup',e=>{
+    el.style.zIndex='';
+    if(!moved){showZonePopup(zone,el);return;}
+    const ir=imgEl.getBoundingClientRect(), er=el.getBoundingClientRect();
+    const nl=(er.left-ir.left)/sx, nt=(er.top-ir.top)/sy;
+    const bw=zone.bbox.x1-zone.bbox.x0, bh=zone.bbox.y1-zone.bbox.y0;
+    zone.bbox={x0:nl,y0:nt,x1:nl+bw,y1:nt+bh};
+    g('ocr-popup').style.display='none'; _activeZone=null;
+  });
+}
+
+function confirmOCR(){
+  const c={nome:'',email:'',tel:'',emp:'',cargo:'',nt1:'',nt2:'',nt3:''};
+  for(const zone of ocrLines){
+    if(zone.field==='ignore')continue;
+    const words=ocrWords.filter(w=>{
+      const cx=(w.bbox.x0+w.bbox.x1)/2,cy=(w.bbox.y0+w.bbox.y1)/2;
+      return cx>=zone.bbox.x0&&cx<=zone.bbox.x1&&cy>=zone.bbox.y0&&cy<=zone.bbox.y1;
+    });
+    const text=words.map(w=>w.text).join(' ').trim();
+    if(text&&zone.field in c) c[zone.field]+=(c[zone.field]?' ':'')+text;
+  }
+  const notas=[c.nt1,c.nt2,c.nt3].filter(Boolean).join('\n');
+  prepareNew({nome:c.nome,email:c.email,tel:c.tel,emp:c.emp,cargo:c.cargo,notas});
+  showView('form');
+}
+
+function retakePhoto(){
+  ocrLines=[]; ocrWords=[];
+  g('crop-overlay').style.display='none';
+  g('ocp-crop').style.display='none';
+  g('ocp-imgwrap').style.display='none';
+  g('ocp-review').style.display='none';
+  g('ocp-proc').style.display='none';
+  g('ocp-capture').style.display='flex';
+  g('ocr-file').value='';
+  g('ocr-file').setAttribute('capture','environment');
+}
+
+/* ══════════════════════════════════════
+   ADMIN — carregar todos os leads do Gist
+══════════════════════════════════════ */
+async function loadAllLeads(btn){
+  if(!D.cfg.ghToken||!D.cfg.gistId){alert(t('load_all_no_gist'));return;}
+  const orig=btn.textContent; btn.textContent='⏳…'; btn.disabled=true;
+  try{
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{
+      headers:{'Authorization':'token '+D.cfg.ghToken,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!r.ok){alert('Erro ao aceder ao Gist: HTTP '+r.status);return;}
+    const gist=await r.json();
+    const all=[];
+    const collectors=[];
+    for(const [fname,file] of Object.entries(gist.files||{})){
+      if(fname.startsWith('leads_')&&fname.endsWith('.json')){
+        try{
+          const leads=JSON.parse(file.content||'[]');
+          if(Array.isArray(leads)){all.push(...leads); collectors.push(fname.replace('leads_','').replace('.json',''));}
+        }catch(e){}
+      }
+    }
+    all.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    adminLeads=all; adminMode=true;
+    closeMov(null,'m-set',true);
+    showView('home');
+    updateTitle();
+    toast('👑 '+t('load_all_ok',{n:all.length,u:collectors.length}));
+  }catch(e){
+    alert('Erro: '+(e.message||e));
+  }finally{
+    btn.textContent=orig; btn.disabled=false;
+  }
+}
+
+/* ══════════════════════════════════════
+   GITHUB GIST SYNC
+══════════════════════════════════════ */
+function dot(){return document.getElementById('sdot');}
+async function autoSync(){if(D.cfg.ghToken&&D.cfg.gistId){dot().className='sdot syncing';const ok=await pushLeads();dot().className='sdot'+(ok?'':' err');}}
+async function pushLeads(){
+  if(!D.cfg.ghToken||!D.cfg.gistId)return false;
+  const fname=`leads_${(D.user||'user').replace(/\s+/g,'_')}.json`;
+  try{
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{
+      method:'PATCH',
+      headers:{'Authorization':'token '+D.cfg.ghToken,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{
+        [fname]:{content:JSON.stringify(D.leads,null,2)},
+        'config.json':{content:JSON.stringify({fair:D.fair,products:D.cfg.products,products_en:D.cfg.products_en,products_es:D.cfg.products_es},null,2)}
+      }})
+    });
+    return r.ok;
+  }catch(e){return false;}
+}
+async function fetchConfig(){
+  if(!D.cfg.gistId)return;
+  try{
+    const hdrs=D.cfg.ghToken?{'Authorization':'token '+D.cfg.ghToken}:{};
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{headers:hdrs});
+    if(!r.ok)return;
+    const g=await r.json();
+    if(g.files?.['config.json']){
+      const cfg=JSON.parse(g.files['config.json'].content);
+      if(cfg.fair&&cfg.fair!==D.fair){D.fair=cfg.fair;updateTitle();}
+      if(cfg.products)D.cfg.products=cfg.products;
+      if(cfg.products_en)D.cfg.products_en=cfg.products_en;
+      if(cfg.products_es)D.cfg.products_es=cfg.products_es;
+      save();
+    }
+    // import leads from same user file if any
+    const fname=`leads_${(D.user||'user').replace(/\s+/g,'_')}.json`;
+    if(g.files?.[fname]){
+      const remote=JSON.parse(g.files[fname].content);
+      const ids=new Set(D.leads.map(l=>l.id));
+      let added=0;for(const l of remote){if(!ids.has(l.id)){D.leads.push(l);added++;}}
+      if(added){save();renderLeads();toast(t('toast_leads_pulled',{n:added}));}
+    }
+  }catch(e){}
+}
+// Pull only leads (no config overwrite) — used after saveSettings to avoid
+// clobbering the user's just-saved fair name / products with the old Gist values.
+async function pullLeads(){
+  if(!D.cfg.gistId)return;
+  try{
+    const hdrs=D.cfg.ghToken?{'Authorization':'token '+D.cfg.ghToken}:{};
+    const r=await fetch(`https://api.github.com/gists/${D.cfg.gistId}`,{headers:hdrs});
+    if(!r.ok)return;
+    const g=await r.json();
+    const fname=`leads_${(D.user||'user').replace(/\s+/g,'_')}.json`;
+    if(g.files?.[fname]){
+      const remote=JSON.parse(g.files[fname].content);
+      const ids=new Set(D.leads.map(l=>l.id));
+      let added=0;for(const l of remote){if(!ids.has(l.id)){D.leads.push(l);added++;}}
+      if(added){save();renderLeads();toast(t('toast_leads_pulled',{n:added}));}
+    }
+  }catch(e){}
+}
+async function testSync(btn){
+  const token  = (document.getElementById('si-token').value  || '').trim();
+  const gistId = (document.getElementById('si-gist').value   || '').trim();
+
+  if(!token || !gistId){
+    alert(t('set_sync_fill'));
+    return;
+  }
+
+  // Visual feedback on the button itself
+  const orig = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = '⏳…'; btn.disabled = true; }
+
+  let msg = '';
+  try{
+    // PATCH a neutral test marker — don't touch config.json so we don't
+    // overwrite a fair name that was set on another device.
+    const r = await fetch('https://api.github.com/gists/' + gistId, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'token ' + token,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({
+        files: { '_sync_test.json': { content: '{"ok":true}' } }
+      })
+    });
+    if(r.ok){
+      // Read config.json from the gist response and apply to the form + app state
+      const g = await r.json();
+      let pulled = [];
+      if(g.files?.['config.json']){
+        try{
+          const cfg = JSON.parse(g.files['config.json'].content);
+          if(cfg.fair){
+            D.fair = cfg.fair;
+            document.getElementById('si-fair').value = cfg.fair;
+            pulled.push(t('sync_pulled_fair'));
+          }
+          if(cfg.products && cfg.products.length){
+            D.cfg.products = cfg.products;
+            if(cfg.products_en)D.cfg.products_en=cfg.products_en;
+            if(cfg.products_es)D.cfg.products_es=cfg.products_es;
+            // Update buffer and textarea for current editing lang
+            _prodsBuf={pt:D.cfg.products.join('\n'),en:(D.cfg.products_en||[]).join('\n'),es:(D.cfg.products_es||[]).join('\n')};
+            document.getElementById('si-prods').value=_prodsBuf[_editingProdsLang]||_prodsBuf.pt;
+            pulled.push(t('sync_pulled_prods'));
+          }
+        }catch(_){}
+      }
+      msg = pulled.length
+        ? `✅ ${t('sync_ok_pulled',{items:pulled.join(' & ')})}`
+        : `✅ ${t('sync_ok_empty')}`;
+    }
+    else if(r.status===401) msg = `❌ ${t('sync_err_token')}`;
+    else if(r.status===404) msg = `❌ ${t('sync_err_404')}`;
+    else if(r.status===422) msg = `❌ ${t('sync_err_422')}`;
+    else                    msg = `❌ HTTP ${r.status}`;
+  } catch(e) {
+    msg = `❌ ${t('sync_err_net')}: ${e.message}`;
+  }
+
+  if(btn){ btn.textContent = orig; btn.disabled = false; }
+  alert(msg);
+}
+
+/* ══════════════════════════════════════
+   EXPORT CSV
+══════════════════════════════════════ */
+function exportCSV(){
+  const leads=activeLeads();
+  if(!leads.length){toast(t('toast_no_leads_export'));return;}
+  const suffix=adminMode?'_ALL':'';
+  const hdr=[t('f_fullname'),'Email',t('f_phone_lbl'),t('f_company_lbl'),t('f_role_lbl'),t('f_product_lbl'),t('f_notes_lbl'),t('f_status_lbl'),t('f_date_lbl'),'Collector','Date'];
+  const rows=leads.map(l=>[l.nome,l.email,l.tel,l.empresa,l.cargo,l.interesse,(l.notas||'').replace(/\n/g,' '),slbl(l.estado),l.date||'',l.collector||'',l.ts?new Date(l.ts).toLocaleDateString():''].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));
+  const csv=[hdr.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`leads_${D.fair.replace(/\s+/g,'_')}${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast(t('toast_exported'));
+}
+
+/* ══════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════ */
+let _editingProdsLang = 'pt'; // which language's products are shown in textarea
+
+function prodsKey(l){return l==='pt'?'products':('products_'+l);}
+
+function switchProdsLang(l, btn){
+  // Save current textarea back to in-memory (not D yet — that happens on Save)
+  _prodsBuf[_editingProdsLang]=document.getElementById('si-prods').value;
+  _editingProdsLang=l;
+  document.getElementById('si-prods').value=_prodsBuf[l]||'';
+  document.querySelectorAll('[data-plang]').forEach(b=>b.classList.toggle('on',b.dataset.plang===l));
+}
+
+let _prodsBuf={pt:'',en:'',es:''};
+
+function openSettings(){
+  document.getElementById('si-user').value=D.user||'';
+  document.getElementById('si-fair').value=D.fair||'';
+  // Load all product lists into buffer, show current editing lang
+  _editingProdsLang='pt';
+  _prodsBuf={pt:(D.cfg.products||[]).join('\n'),en:(D.cfg.products_en||[]).join('\n'),es:(D.cfg.products_es||[]).join('\n')};
+  document.getElementById('si-prods').value=_prodsBuf.pt;
+  document.querySelectorAll('[data-plang]').forEach(b=>b.classList.toggle('on',b.dataset.plang==='pt'));
+  document.getElementById('si-pin').value='';document.getElementById('si-pin2').value='';
+  document.getElementById('si-token').value=D.cfg.ghToken||'';
+  document.getElementById('si-gist').value=D.cfg.gistId||'';
+  openMov('m-set');
+  // Update language button states
+  document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('on',b.dataset.lang===curLang));
+  // Edge/Chrome password manager can autofill password fields asynchronously;
+  // clearing them again after a short delay prevents saveSettings from aborting.
+  setTimeout(()=>{
+    document.getElementById('si-pin').value='';
+    document.getElementById('si-pin2').value='';
+  },300);
+}
+function saveSettings(){
+  const np=document.getElementById('si-pin').value.trim();
+  const np2=document.getElementById('si-pin2').value.trim();
+  if(np){
+    if(np!==np2){toast(t('toast_pin_mismatch'));return;}
+    if(!/^\d{4}$/.test(np)){toast(t('toast_pin_short'));return;}
+    D.cfg.pin=np==='0000'?'':hashPin(np); // 0000 = remover PIN
+  }
+  D.user=document.getElementById('si-user').value.trim();
+  D.fair=document.getElementById('si-fair').value.trim()||'Feira';
+  // Flush current textarea into buffer before saving all
+  _prodsBuf[_editingProdsLang]=document.getElementById('si-prods').value;
+  D.cfg.products=_prodsBuf.pt.split('\n').map(l=>l.trim()).filter(Boolean);
+  D.cfg.products_en=_prodsBuf.en.split('\n').map(l=>l.trim()).filter(Boolean);
+  D.cfg.products_es=_prodsBuf.es.split('\n').map(l=>l.trim()).filter(Boolean);
+  D.cfg.ghToken=document.getElementById('si-token').value.trim();
+  D.cfg.gistId=document.getElementById('si-gist').value.trim();
+  save();updateTitle();
+  document.getElementById('sdot').style.display=D.cfg.gistId?'block':'none';
+  closeMov(null,'m-set',true);toast(t('toast_saved'));
+  if(D.cfg.ghToken&&D.cfg.gistId){
+    // Push config first (preserves the user's just-saved fair name / products),
+    // then pull only leads — never fetchConfig here or it would overwrite D.fair.
+    pushLeads().then(()=>pullLeads());
+  }
+}
+function clearAll(){
+  if(!confirm(t('alert_clear')))return;
+  D.leads=[];save();closeMov(null,'m-set',true);toast(t('toast_cleared'));renderLeads();
+}
+
+/* ══════════════════════════════════════
+   MODAL UTILS
+══════════════════════════════════════ */
+function openMov(id){document.getElementById(id).classList.add('on');}
+function closeMov(e,id,force){if(force||!e||e.target===document.getElementById(id))document.getElementById(id).classList.remove('on');}
+
+/* ══════════════════════════════════════
+   UTILS
+══════════════════════════════════════ */
+function h(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function bclass(e){return{pendente:'bp',contactado:'bcc',qualificado:'bq',descartado:'bd'}[e]||'bp';}
+function slbl(e){const icons={pendente:'⏳',contactado:'📞',qualificado:'✅',descartado:'❌'};const ic=icons[e]||'';return ic?ic+' '+t('slbl_'+e):e;}
+function fdate(s){try{return new Date(s+'T00:00:00').toLocaleDateString('pt-PT',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return s;}}
+function fdt(s){try{return new Date(s).toLocaleString('pt-PT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
+let tt;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2800);}
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+load();
+applyLang();
+updateTitle();
+document.getElementById('sdot').style.display=D.cfg.gistId?'block':'none';
+renderLeads();
+setupCropEvents();
+// Close OCR field popup when tapping outside
+document.addEventListener('pointerdown',e=>{
+  const popup=document.getElementById('ocr-popup');
+  if(popup&&popup.style.display==='block'&&!popup.contains(e.target)&&!e.target.classList.contains('ocr-zone')){
+    popup.style.display='none'; _activeZone=null;
+  }
+},true);
+fetchConfig(); // ao arrancar: sincroniza config e importa leads do Gist se configurado
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// Pinch-to-zoom no ecrã de scan
+(()=>{
+  const box=document.getElementById('cambox');
+  box.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      pinchZoom0=parseFloat(document.getElementById('zoom-slider').value)||1;
+    }
+  },{passive:true});
+  box.addEventListener('touchmove',e=>{
+    if(e.touches.length===2&&pinchDist0&&zoomCap){
+      e.preventDefault();
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      let v=Math.min(zoomCap.max,Math.max(zoomCap.min,pinchZoom0*(d/pinchDist0)));
+      document.getElementById('zoom-slider').value=v;
+      applyZoom(v);
+    }
+  },{passive:false});
+  box.addEventListener('touchend',()=>{pinchDist0=null;},{passive:true});
+})();
+</script>
+</body>
+</html>
