@@ -91,6 +91,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 canvas#qr-cv{display:none;}
 .scan-msg{background:#fff;border:1px solid var(--br);border-radius:12px;padding:11px 16px;font-size:14px;color:var(--t);width:100%;max-width:380px;text-align:center;}
 .scan-err{background:#FEF2F2;border-color:#FECACA;color:var(--err);}
+.scan-warn{background:#FFFBEB;border-color:#FCD34D;color:#92400E;font-weight:600;}
 /* LANGUAGE SELECTOR */
 .lang-btns{display:flex;gap:8px;margin-bottom:4px;}
 .btn-lang{padding:7px 16px;border:2px solid var(--br);border-radius:10px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--t);}
@@ -193,7 +194,7 @@ a.dval{color:var(--p);text-decoration:none;}
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
     </svg>
-    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v24</span>
+    <span style="font-size:9px;opacity:.55;line-height:1;letter-spacing:.2px">v25</span>
   </button>
 </div>
 
@@ -558,6 +559,7 @@ let curV='home', editId=null, flt='all';
 let scanning=false, stream=null, raf=null;
 let torchOn=false, torchAuto=true, brightFrames=0, zoomCap=null, pinchDist0=null, pinchZoom0=1;
 let _lastQR='', _qrFirstSeen=0; // time-based confirmation — avoids firing on partial reads
+let _scanMsgState=''; // tracks current msg to avoid redundant DOM updates
 let recog=null;
 
 function load(){try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);D=Object.assign({fair:'Feira',user:'',cfg:{pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},leads:[]},p);D.cfg=Object.assign({pin:'',ghToken:'',gistId:'',products:[],products_en:[],products_es:[]},p.cfg||{});}}catch(e){}}
@@ -578,6 +580,8 @@ const LANGS = {
     stat_total:'leads', stat_today:'hoje',
     // Scan
     scan_starting:'A iniciar câmara…', scan_prompt:'📷 Aponta para um QR Code…',
+    scan_confirming:'A confirmar leitura… mantém firme!',
+    scan_unreadable:'QR detectado mas ilegível — aproxima ou ajusta o zoom',
     scan_manual:'✍️ Introduzir manualmente',
     torch_off:'Sem flash neste dispositivo',
     // Form
@@ -670,6 +674,8 @@ const LANGS = {
     s_pendente:'Pending', s_contactado:'Contacted', s_qualificado:'Qualified', s_descartado:'Discarded',
     stat_total:'leads', stat_today:'today',
     scan_starting:'Starting camera…', scan_prompt:'📷 Point at a QR Code…',
+    scan_confirming:'Confirming read… hold steady!',
+    scan_unreadable:'QR detected but unreadable — get closer or adjust zoom',
     scan_manual:'✍️ Enter manually',
     torch_off:'Flash not available on this device',
     sec_contact:'👤 Contact', sec_company:'🏢 Company', sec_interest:'🎯 Interest', sec_followup:'📅 Follow-up',
@@ -754,6 +760,8 @@ const LANGS = {
     s_pendente:'Pendiente', s_contactado:'Contactado', s_qualificado:'Calificado', s_descartado:'Descartado',
     stat_total:'leads', stat_today:'hoy',
     scan_starting:'Iniciando cámara…', scan_prompt:'📷 Apunta a un código QR…',
+    scan_confirming:'Confirmando lectura… ¡mantén firme!',
+    scan_unreadable:'QR detectado pero ilegible — acércate o ajusta el zoom',
     scan_manual:'✍️ Introducir manualmente',
     torch_off:'Flash no disponible en este dispositivo',
     sec_contact:'👤 Contacto', sec_company:'🏢 Empresa', sec_interest:'🎯 Interés', sec_followup:'📅 Seguimiento',
@@ -1054,7 +1062,7 @@ async function getRearStream(){
 }
 async function startScan(){
   const msg=document.getElementById('scan-msg');
-  torchOn=false;torchAuto=true;brightFrames=0;_lastQR='';_qrFirstSeen=0;
+  torchOn=false;torchAuto=true;brightFrames=0;_lastQR='';_qrFirstSeen=0;_scanMsgState='';
   document.getElementById('btn-torch').classList.remove('on');
   document.getElementById('btn-torch').style.display='';
   document.getElementById('scan-ctrls').style.display='none';
@@ -1170,6 +1178,7 @@ function tick(){
     const raw=code?.data?.trim()||'';
     // Validate: must have real content (min length + at least one alphanumeric char)
     const valid=raw.length>=6 && /[a-zA-Z0-9@.+\-_]/.test(raw);
+    const msg=document.getElementById('scan-msg');
     if(valid){
       const now=Date.now();
       if(raw===_lastQR){
@@ -1178,17 +1187,31 @@ function tick(){
           _lastQR='';_qrFirstSeen=0;
           stopScan();onQR(raw);return;
         }
+        setScanMsg('confirming','🔄 '+t('scan_confirming'),false);
       } else {
         // New candidate — start timer
         _lastQR=raw; _qrFirstSeen=now;
+        setScanMsg('confirming','🔄 '+t('scan_confirming'),false);
       }
-    } else {
-      // Nothing valid in frame — reset
+    } else if(code){
+      // QR pattern detected but data unreadable
       _lastQR=''; _qrFirstSeen=0;
+      setScanMsg('bad','⚠️ '+t('scan_unreadable'),true);
+    } else {
+      // Nothing in frame
+      _lastQR=''; _qrFirstSeen=0;
+      setScanMsg('idle',t('scan_prompt'),false);
     }
     if(torchAuto&&++brightFrames%30===0)checkBrightness(img.data);
   }
   raf=requestAnimationFrame(tick);
+}
+function setScanMsg(state, text, warn){
+  if(_scanMsgState===state)return; // avoid redundant DOM writes every frame
+  _scanMsgState=state;
+  const el=document.getElementById('scan-msg');
+  el.textContent=text;
+  el.className='scan-msg'+(warn?' scan-warn':'');
 }
 function onQR(raw){
   document.getElementById('scan-msg').textContent='✅ QR detetado! A abrir formulário…';
